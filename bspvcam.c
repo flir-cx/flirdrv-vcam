@@ -6,7 +6,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "../fvd/flir_kernel_os.h"
+#include "flir_kernel_os.h"
 #include "vcam.h"
 #include "vcam_internal.h"
 #include "i2cdev.h"

@@ -1,18 +1,18 @@
+obj-m := vcam.o
+vcam-objs += vcamd.o
+vcam-objs += MT9P111.o
+vcam-objs += bspvcam.o
 
-# typically use the following to compile
-# make ARCH=arm CROSS_COMPILE=/home/fredrik/mentor/arm-2011.03/bin/arm-none-linux-gnueabi
-#
-# Also modify 'KERNELDIR' to fit your system
+SRC := $(shell pwd)
 
-EXTRA_CFLAGS = -I$(ALPHAREL)/SDK/FLIR/Include
+all:
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC)
 
-	obj-m := vcam.o
-	vcam-objs += vcamd.o
-	vcam-objs += MT9P111.o
-	vcam-objs += bspvcam.o
-	
-	KERNELDIR ?= /home/pfitger/linux-2.6-imx
-	PWD := $(shell pwd)
-default:
-	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
+modules_install:
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules_install
+
+clean:
+	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
+	rm -f Module.markers Module.symvers modules.order
+	rm -rf .tmp_versions Modules.symvers
 
