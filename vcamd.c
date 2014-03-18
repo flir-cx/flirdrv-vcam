@@ -22,37 +22,34 @@
 #include <linux/i2c.h>
 
 // Function prototypes
-static int VCAM_IOControl(struct inode *inode, struct file *filep,
+static long VCAM_IOControl(struct file *filep,
 		unsigned int cmd, unsigned long arg);
 static ssize_t dummyWrite (struct file *filp, const char __user  *buf, size_t count, loff_t *f_pos);
 static ssize_t dummyRead (struct file *filp, char __user *buf, size_t count, loff_t *f_pos);
 static int dummyRelease (struct inode *inode, struct file *filp);
 static int dummyOpen (struct inode *inode, struct file *filp);
+static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
+                         DWORD  Ioctl,
+                         PUCHAR pBuf,
+                         PUCHAR pUserBuf);
 
 static PCAM_HW_INDEP_INFO gpDev;
 
 static struct file_operations vcam_fops =
 {
 		.owner = THIS_MODULE,
-		.ioctl = VCAM_IOControl,
+		.unlocked_ioctl = VCAM_IOControl,
 		.write = dummyWrite,
 		.read = dummyRead,
 		.open = dummyOpen,
 		.release = dummyRelease,
 };
-#ifdef NOT_YET
-static struct resource vcam_resources[] = {
-	{
-		.start = MXC_INT_UART5,
-		.flags = IORESOURCE_IRQ,
-	},
-};
-#endif
 
 // Code
 static int __init VCAM_Init(void)
 {
 	int i;
+	int ret;
 
     pr_err("VCAM_Init\n");
 
@@ -89,30 +86,27 @@ static int __init VCAM_Init(void)
     	pr_err("Error adding allocating device\n");
         return -4;
     }
-//    platform_device_add_resources(gpDev->pLinuxDevice, vcam_resources,
-//    							  ARRAY_SIZE(vcam_resources));
     platform_device_add(gpDev->pLinuxDevice);
 	pr_err("VCAM driver device id %d.%d added\n", MAJOR(gpDev->vcam_dev), MINOR(gpDev->vcam_dev));
 
 	// initialize this device instance
     sema_init(&gpDev->semDevice, 1);
 
-    gpDev->hI2C = i2c_get_adapter(0);
+    gpDev->hI2C = i2c_get_adapter(1);
 
     pr_err("VCAM I2C driver %p\n", gpDev->hI2C);
 
-   	// Detect camera type
-    gpDev->eCamModel = BSPGetCameraModel();
+	// Init hardware
+    if (cpu_is_mx51())
+    	ret = PicoInitHW(gpDev);
+    else
+    	ret = NecoInitHW(gpDev);
 
-    // Init HW
-    if (TRUE != BSPInitHW(gpDev))
+    if (TRUE != ret)
 	{
 		pr_err ("CAM_Init - falied to init hardware!\n");
 		return -5;
 	}
-
-    // Init light limit
-    BSPSetLightLimit();
 
 	return 0;
 }
@@ -125,7 +119,6 @@ static void __devexit VCAM_Deinit(void)
     // if the device is running, stop it
     if (gpDev != NULL)
     {
-    	BSPDeinitHW();
         i2c_put_adapter(gpDev->hI2C);
 
         unregister_chrdev_region(gpDev->vcam_dev, 1);
@@ -163,13 +156,11 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 										pBuf,
 										pUserBuf);
 
-#ifdef NOT_YET
 			case OV7740:
-				return OV7740_IOControl(dwContext,
+				return OV7740_IOControl(pInfo,
 						Ioctl,
 						pBuf,
 						pUserBuf);
-#endif
 
 			default:
 				dwErr = ERROR_NOT_SUPPORTED;
@@ -185,7 +176,7 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
        		LOCK(pInfo);
 
 			// Callback to platform code to get torch/flash state
-			dwErr = BSPGetTorchState(pFlashData);
+			dwErr = pInfo->pGetTorchState(pFlashData);
 	   		UNLOCK(pInfo);
 		}
         break;
@@ -216,7 +207,7 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 // VCAM_IOControl
 //
 ////////////////////////////////////////////////////////
-static int VCAM_IOControl(struct inode *inode, struct file *filep,
+static long VCAM_IOControl(struct file *filep,
 		unsigned int cmd, unsigned long arg)
 {
     DWORD dwErr = ERROR_SUCCESS;
@@ -281,11 +272,11 @@ static int dummyOpen (struct inode *inode, struct file *filp)
 			case MT9P111:
 				MT9P111_Init(gpDev);
 				break;
-#ifdef NOT_YET
+
 			case OV7740:
 				OV7740_Init(gpDev);
 				break;
-#endif
+
 			default:
 				pr_err("CAM_Init - camera model undetermined!\n");
 				break;

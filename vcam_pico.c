@@ -26,6 +26,54 @@
 // Local variables
 
 // Function prototypes
+static BOOL InitI2CIoport (PCAM_HW_INDEP_INFO pInfo);
+static BOOL SetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value);
+// static BOOL GetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit);
+
+static DWORD GetTorchState(VCAMIOCTLFLASH * pFlashData);
+static DWORD SetTorchState(VCAMIOCTLFLASH * pFlashData);
+static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
+
+//-----------------------------------------------------------------------------
+//
+// Function: PicoInitHW
+//
+// This function will perform BSP specific initialization.
+//
+// Parameters:
+//
+// Returns:
+//      Returns status of init code.
+//
+//-----------------------------------------------------------------------------
+
+DWORD PicoInitHW(PCAM_HW_INDEP_INFO pInfo)
+{
+    BOOL ret = TRUE;
+
+    pInfo->eCamModel = MT9P111;
+    pInfo->pGetTorchState = GetTorchState;
+    pInfo->pSetTorchState = SetTorchState;
+    pInfo->pEnablePower = EnablePower;
+    pInfo->cameraI2CAddress[0] = 0x78;
+    pInfo->cameraI2CAddress[1] = 0x7A;
+
+    ret = SetI2CIoport(pInfo, VCM_PWR_EN, FALSE);
+    if (ret)
+        ret = SetI2CIoport(pInfo, VCM_RESET, TRUE);
+    if (ret)
+        ret = SetI2CIoport(pInfo, VCM_CLK_EN, FALSE);
+    if (ret)
+        ret = SetI2CIoport(pInfo, VCM_I2C_EN, FALSE);
+    if (ret)
+        ret = InitI2CIoport(pInfo);
+
+    if (ret)
+        EnablePower(pInfo, TRUE);
+    return ret;
+}
+
+
 
 //-----------------------------------------------------------------------------
 //
@@ -40,7 +88,7 @@
 //
 //-----------------------------------------------------------------------------
 
-static BOOL InitI2CIoport (PCAM_HW_INDEP_INFO pInfo)
+BOOL InitI2CIoport (PCAM_HW_INDEP_INFO pInfo)
 {
 	struct i2c_msg msgs[2];
     int res;
@@ -66,7 +114,7 @@ static BOOL InitI2CIoport (PCAM_HW_INDEP_INFO pInfo)
                             (1 << VCM_RESET) |
                             (1 << VCM_CLK_EN) |
                             (1 << VCM_I2C_EN));  
-//        pr_err("VCAM: IOPORT %02X -> %02X\n", buf[0], buf[1]);
+        pr_err("VCAM: IOPORT %02X -> %02X\n", buf[0], buf[1]);
         buf[0] = 3;
     	res = i2c_transfer(pInfo->hI2C, msgs, 1);
     }
@@ -87,7 +135,7 @@ static BOOL InitI2CIoport (PCAM_HW_INDEP_INFO pInfo)
 //
 //-----------------------------------------------------------------------------
 
-static BOOL SetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value)
+BOOL SetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value)
 {
 	struct i2c_msg msgs[2];
     int res;
@@ -115,7 +163,7 @@ static BOOL SetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value)
             buf[1] |= (1 << bit);
         else
             buf[1] &= ~(1 << bit);
-//        pr_err("VCAM: IO Set %02X -> %02X\n", buf[0], buf[1]);
+        pr_err("VCAM: IO Set %02X -> %02X\n", buf[0], buf[1]);
         buf[0] = 1;       // Set output value
 
     	res = i2c_transfer(pInfo->hI2C, msgs, 1);
@@ -124,6 +172,7 @@ static BOOL SetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value)
     return (res > 0);
 }
 
+#if 0
 //-----------------------------------------------------------------------------
 //
 // Function: GetI2CIoport
@@ -137,7 +186,7 @@ static BOOL SetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value)
 //
 //-----------------------------------------------------------------------------
 
-static BOOL GetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit)
+BOOL GetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit)
 {
 	struct i2c_msg msgs[2];
     int res;
@@ -159,75 +208,11 @@ static BOOL GetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit)
 
     return ((buf[0] & (1 << bit)) != 0);
 }
+#endif
 
 //-----------------------------------------------------------------------------
 //
-// Function: BSPInitHW
-//
-// This function will perform BSP specific initialization.
-//
-// Parameters:
-//
-// Returns:
-//      Returns status of init code.
-//
-//-----------------------------------------------------------------------------
-
-DWORD BSPInitHW(PCAM_HW_INDEP_INFO pInfo)
-{
-    BOOL ret;
-
-    ret = SetI2CIoport(pInfo, VCM_PWR_EN, FALSE);
-    if (ret)
-        ret = SetI2CIoport(pInfo, VCM_RESET, TRUE);
-    if (ret)
-        ret = SetI2CIoport(pInfo, VCM_CLK_EN, FALSE);
-    if (ret)
-        ret = SetI2CIoport(pInfo, VCM_I2C_EN, FALSE);
-    if (ret)
-        ret = InitI2CIoport(pInfo);
-
-    if (ret)
-        BspEnablePower(pInfo, TRUE);
-
-    return ret;
-}
-
-//-----------------------------------------------------------------------------
-//
-// Function:  BSPDeinitHW
-//
-// This function will perform BSP specific deinitialization.
-//
-// Parameters:
-//
-// Returns:
-//
-//-----------------------------------------------------------------------------
-DWORD BSPDeinitHW()
-{
-    return ERROR_SUCCESS;
-}
-
-//-----------------------------------------------------------------------------
-//
-// Function:  BSPGetCameraModel
-//
-// This function will return type of visual camera used.
-//
-// Parameters:
-//
-// Returns:
-//
-//-----------------------------------------------------------------------------
-VCAM_CamModel BSPGetCameraModel()
-{
-	return MT9P111;
-}
-
-//-----------------------------------------------------------------------------
-//
-// Function:  BSPGetTorchState
+// Function:  GetTorchState
 //
 // This function will return torch and flash state.
 //
@@ -236,7 +221,7 @@ VCAM_CamModel BSPGetCameraModel()
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD BSPGetTorchState(VCAMIOCTLFLASH * pFlashData)
+DWORD GetTorchState(VCAMIOCTLFLASH * pFlashData)
 {
     pFlashData->bTorchOn = FALSE;
     pFlashData->bFlashOn = FALSE;
@@ -246,7 +231,7 @@ DWORD BSPGetTorchState(VCAMIOCTLFLASH * pFlashData)
 
 //-----------------------------------------------------------------------------
 //
-// Function:  BSPSetTorchState
+// Function:  SetTorchState
 //
 // This function will set torch and flash state.
 //
@@ -255,79 +240,14 @@ DWORD BSPGetTorchState(VCAMIOCTLFLASH * pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD BSPSetTorchState(VCAMIOCTLFLASH * pFlashData)
+DWORD SetTorchState(VCAMIOCTLFLASH * pFlashData)
 {
 	return ERROR_SUCCESS;
 }
 
 //-----------------------------------------------------------------------------
 //
-// Function:  BSPGetCameraI2CAddress
-//
-// This function will return visual camera I2C address
-//
-// Parameters:
-//
-// Returns:
-//
-//-----------------------------------------------------------------------------
-UCHAR BSPGetCameraI2CAddress(DWORD dwCamNo)
-{
-    UCHAR addr;
-
-    switch (dwCamNo)
-    {
-        case 0:
-            addr = 0x78;    // CAM1
-            break;
-        
-        case 1:
-            addr = 0x7A;    // CAM2
-            break;
-
-        default:
-            addr = 0;
-            break;
-    }
-    return addr;
-}
-
-//-----------------------------------------------------------------------------
-//
-// Function:  BspReinitAfterStandby
-//
-// This function returns true if we need to reinitialize the camera module 
-// after standby.
-//
-// Parameters:
-//
-// Returns:
-//
-//-----------------------------------------------------------------------------
-BOOL BspGetReinitAfterStandby(void)
-{
-    return FALSE;
-}
-
-//-----------------------------------------------------------------------------
-//
-// Function:  BSPSetLightLimit
-//
-// This function will ....
-//
-// Parameters:
-//
-// Returns:
-//
-//-----------------------------------------------------------------------------
-BOOL BSPSetLightLimit(void)
-{
-    return TRUE;
-}
-
-//-----------------------------------------------------------------------------
-//
-// Function:  BspEnablePower
+// Function:  EnablePower
 //
 // This function will control standby/on GPIO usage
 //
@@ -336,7 +256,7 @@ BOOL BSPSetLightLimit(void)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-void BspEnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
+void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 {
     if (bEnable)
     {

@@ -883,7 +883,7 @@ static BOOL DoI2CWrite (PCAM_HW_INDEP_INFO pInfo,
     for (cam=cam_first; cam<=cam_last; cam++)
     {
         // Check if camera in use
-        msgs[0].addr = BSPGetCameraI2CAddress(cam) >> 1;
+        msgs[0].addr = pInfo->cameraI2CAddress[cam] >> 1;
         if (msgs[0].addr == 0)
             continue;
         msgs[1].addr = msgs[0].addr;
@@ -900,7 +900,7 @@ static BOOL DoI2CWrite (PCAM_HW_INDEP_INFO pInfo,
                 msgs[0].flags = 0;
                 msgs[0].len = 2;
                 msgs[0].buf = cmd;
-                msgs[1].flags = I2C_M_RD;
+                msgs[1].flags = I2C_M_RD | I2C_M_NOSTART;
                 msgs[1].len = 2;
                 msgs[1].buf = stat;
 
@@ -959,7 +959,7 @@ static BOOL DoI2CWrite (PCAM_HW_INDEP_INFO pInfo,
 
     return TRUE;
 }
-
+#if 0
 static BOOL DoI2CRead (PCAM_HW_INDEP_INFO pInfo, USHORT *result, USHORT reg, CAM_NO camera)
 {
 	struct i2c_msg msgs[2];
@@ -976,7 +976,7 @@ static BOOL DoI2CRead (PCAM_HW_INDEP_INFO pInfo, USHORT *result, USHORT reg, CAM
     msgs[0].flags = 0;
     msgs[0].len = 2;
     msgs[0].buf = cmd;
-    msgs[1].flags = I2C_M_RD;
+    msgs[1].flags = I2C_M_RD | I2C_M_NOSTART;
     msgs[1].len = 2;
     msgs[1].buf = stat;
 
@@ -995,29 +995,29 @@ static BOOL DoI2CRead (PCAM_HW_INDEP_INFO pInfo, USHORT *result, USHORT reg, CAM
     }
     return ret;
 }
+#endif
 
 static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
 {
 	BOOL ret = TRUE;
 
-	ret = DoI2CWrite(pInfo, I2CDataInitPart1[0], dim(I2CDataInitPart1), 0x18, 0x4009, 100, cam);
-
+    ret = DoI2CWrite(pInfo, I2CDataInitPart1[0], dim(I2CDataInitPart1), 0x18, 0x4009, 100, cam);
     if (ret)
         ret = DoI2CWrite(pInfo, I2CDataInitPart2[0], dim(I2CDataInitPart2), 0x18, 0x2008, 1000, cam);
-	if (ret)
-		ret = DoI2CWrite(pInfo, I2CDataInitPart3[0], dim(I2CDataInitPart3), 0x18, 0x4009, 1000, cam);
-  	if (ret)
-    	ret = DoI2CWrite(pInfo, I2CDataInitPart4[0], dim(I2CDataInitPart4), 0, 0, 100, cam);
-	if (ret)
-    	ret = DoI2CWrite(pInfo, I2CDataInitPart5[0], dim(I2CDataInitPart5), 0, 0, 200, cam);
     if (ret)
-		ret = DoI2CWrite(pInfo, I2CDataInitPart6[0], dim(I2CDataInitPart6), 0, 0, 200, cam);
-	if (ret)
-		ret = DoI2CWrite(pInfo, I2CDataInitPart8[0], dim(I2CDataInitPart8), 0, 0, 200, cam);
+        ret = DoI2CWrite(pInfo, I2CDataInitPart3[0], dim(I2CDataInitPart3), 0x18, 0x4009, 1000, cam);
     if (ret)
-		ret = DoI2CWrite(pInfo, I2CDataInitPart9[0], dim(I2CDataInitPart9), 0, 0, 200, cam);
-	if (ret)
-		ret = DoI2CWrite(pInfo, I2CDataInitPart10[0], dim(I2CDataInitPart10), 0x16, 0x0447, 1000, cam);
+        ret = DoI2CWrite(pInfo, I2CDataInitPart4[0], dim(I2CDataInitPart4), 0, 0, 100, cam);
+    if (ret)
+        ret = DoI2CWrite(pInfo, I2CDataInitPart5[0], dim(I2CDataInitPart5), 0, 0, 200, cam);
+    if (ret)
+        ret = DoI2CWrite(pInfo, I2CDataInitPart6[0], dim(I2CDataInitPart6), 0, 0, 200, cam);
+    if (ret)
+        ret = DoI2CWrite(pInfo, I2CDataInitPart8[0], dim(I2CDataInitPart8), 0, 0, 200, cam);
+    if (ret)
+        ret = DoI2CWrite(pInfo, I2CDataInitPart9[0], dim(I2CDataInitPart9), 0, 0, 200, cam);
+    if (ret)
+        ret = DoI2CWrite(pInfo, I2CDataInitPart10[0], dim(I2CDataInitPart10), 0x16, 0x0447, 1000, cam);
     if (ret)
         ret = DoI2CWrite(pInfo, I2CDataInitPart7[0], dim(I2CDataInitPart7), 0, 0, 200, cam);
 
@@ -1112,7 +1112,7 @@ DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo,
 				{
 				}
 
-				dwErr = BSPSetTorchState(pFlashData);
+				dwErr = pInfo->pSetTorchState(pFlashData);
 			    UNLOCK(pInfo);
             }
             break;

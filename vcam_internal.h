@@ -33,22 +33,28 @@ typedef struct __CAM_HW_INDEP_INFO {
 	struct semaphore		semDevice;			// serialize access to this device's state
 	VCAM_CamModel			eCamModel;			// type/model of visual camera module
     struct i2c_adapter 	   *hI2C;
+
+    UCHAR					cameraI2CAddress[2];
+
+    // Function pointers
+    DWORD (* pGetTorchState) (VCAMIOCTLFLASH * pFlashData);
+    DWORD (* pSetTorchState) (VCAMIOCTLFLASH * pFlashData);
+    void  (* pEnablePower) (struct __CAM_HW_INDEP_INFO * pInfo, BOOL bEnable);
+
 } CAM_HW_INDEP_INFO, *PCAM_HW_INDEP_INFO;
 
 // Hardware specific functions
-DWORD			BSPInitHW(PCAM_HW_INDEP_INFO pInfo);
-DWORD			BSPDeinitHW(void);
-VCAM_CamModel	BSPGetCameraModel(void);
-UCHAR			BSPGetCameraI2CAddress(DWORD dwCamNo);
-BOOL            BspGetReinitAfterStandby(void);
-DWORD			BSPGetTorchState(VCAMIOCTLFLASH * pFlashData);
-DWORD			BSPSetTorchState(VCAMIOCTLFLASH * pFlashData);
-BOOL			BSPSetLightLimit(void);
-void            BspEnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
+DWORD			NecoInitHW(PCAM_HW_INDEP_INFO pInfo);
+DWORD			PicoInitHW(PCAM_HW_INDEP_INFO pInfo);
 
 // Visual camera specific functions
 BOOL MT9P111_Init(PCAM_HW_INDEP_INFO pInfo);
 DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo,
+                        DWORD  Ioctl,
+                        PUCHAR pBuf,
+                        PUCHAR pUserBuf);
+BOOL OV7740_Init(PCAM_HW_INDEP_INFO pInfo);
+DWORD OV7740_IOControl(PCAM_HW_INDEP_INFO pInfo,
                         DWORD  Ioctl,
                         PUCHAR pBuf,
                         PUCHAR pUserBuf);

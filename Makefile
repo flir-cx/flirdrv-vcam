@@ -1,18 +1,21 @@
+ifeq ($(KERNEL_SRC),)
+	KERNEL_SRC ?= ~/linux/flir-yocto/build_pico/tmp-eglibc/work/neco-oe-linux-gnueabi/linux-boundary/3.0.35-r0/git
+endif
+
+EXTRA_CFLAGS = -I$(ALPHAREL)/SDK/FLIR/Include
+
 obj-m := vcam.o
 vcam-objs += vcamd.o
 vcam-objs += MT9P111.o
-vcam-objs += bspvcam.o
+vcam-objs += OV7740.o
+vcam-objs += vcam_pico.o
+vcam-objs += vcam_neco.o
 
 SRC := $(shell pwd)
 
 all:
-	$(MAKE) -C $(KERNEL_SRC) M=$(SRC)
-
-modules_install:
-	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules_install
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules
 
 clean:
-	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
-	rm -f Module.markers Module.symvers modules.order
-	rm -rf .tmp_versions Modules.symvers
+	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) clean
 
