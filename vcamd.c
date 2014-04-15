@@ -88,6 +88,8 @@ static int __init VCAM_Init(void)
     }
     platform_device_add(gpDev->pLinuxDevice);
 	pr_err("VCAM driver device id %d.%d added\n", MAJOR(gpDev->vcam_dev), MINOR(gpDev->vcam_dev));
+	gpDev->vcam_class = class_create(THIS_MODULE, "vcam");
+    device_create(gpDev->vcam_class, NULL, gpDev->vcam_dev, NULL, "vcam0");
 
 	// initialize this device instance
     sema_init(&gpDev->semDevice, 1);
@@ -121,6 +123,8 @@ static void __devexit VCAM_Deinit(void)
     {
         i2c_put_adapter(gpDev->hI2C);
 
+        device_destroy(gpDev->vcam_class, gpDev->vcam_dev);
+    	class_destroy(gpDev->vcam_class);
         unregister_chrdev_region(gpDev->vcam_dev, 1);
     	platform_device_unregister(gpDev->pLinuxDevice);
        	kfree(gpDev);

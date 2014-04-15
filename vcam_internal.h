@@ -29,6 +29,7 @@
 typedef struct __CAM_HW_INDEP_INFO {
 	struct platform_device *pLinuxDevice;
     struct cdev 			vcam_cdev;			// Linux character device
+    struct class			*vcam_class;
     dev_t 					vcam_dev;			// Major.Minor device number
 	struct semaphore		semDevice;			// serialize access to this device's state
 	VCAM_CamModel			eCamModel;			// type/model of visual camera module
