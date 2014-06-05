@@ -94,7 +94,7 @@ static int __init VCAM_Init(void)
 	// initialize this device instance
     sema_init(&gpDev->semDevice, 1);
 
-    gpDev->hI2C = i2c_get_adapter(1);
+    gpDev->hI2C = i2c_get_adapter(2);
 
     pr_err("VCAM I2C driver %p\n", gpDev->hI2C);
 

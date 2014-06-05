@@ -19,7 +19,6 @@
 #include "vcam_internal.h"
 #include "i2cdev.h"
 #include <linux/i2c.h>
-// #include "OV7740.h"
 
 // Local typedefs
 
@@ -244,14 +243,7 @@ Sensor Horizontal Output Start Point 8 MSBs
     { 0xDD, 0x50 }, 
     { 0xDE, 0x50 },	
   
-  };
-
-
-
-
-
-
-
+};
 
 static const UCHAR I2CDataStandByEnter[][2] = {
     { 0x0E, 0xE8 },
@@ -267,10 +259,10 @@ static BOOL DoI2CWrite (PCAM_HW_INDEP_INFO pInfo,
 						  const UCHAR *buf,
 						  USHORT elements)
 {
-	struct i2c_msg msg;
-    DWORD ret;
+    struct i2c_msg msg;
+    int ret;
     int i;
-    int retries = 50;
+    int retries = 10;
     const UCHAR *ptr;
 
 	// Check if camera in use
@@ -335,15 +327,6 @@ static BOOL DoI2CRead (PCAM_HW_INDEP_INFO pInfo, USHORT *result, USHORT reg)
 }
 #endif
 
-static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit)
-{
-	BOOL ret;
-
-	ret = DoI2CWrite(pInfo, I2CDataInitPart1[0], dim(I2CDataInitPart1));
-
-	return ret;
-}
-
 BOOL OV7740_Init(PCAM_HW_INDEP_INFO pInfo)
 {
     // Camera can not be initialized until FPGA up and running
@@ -380,7 +363,7 @@ DWORD OV7740_IOControl(PCAM_HW_INDEP_INFO pInfo,
 
 	case IOCTL_CAM_INIT:
 		LOCK(pInfo);
-		dwErr = (initCamera(pInfo, TRUE) == TRUE);
+		dwErr = (DoI2CWrite(pInfo, I2CDataInitPart1[0], dim(I2CDataInitPart1))) ? ERROR_SUCCESS : -EIO;
 		if (bCamActive == FALSE)
 			DoI2CWrite(pInfo, I2CDataStandByEnter[0], dim(I2CDataStandByEnter));
 		UNLOCK(pInfo);
