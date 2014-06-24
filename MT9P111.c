@@ -1112,7 +1112,7 @@ DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo,
 				{
 				}
 
-				dwErr = pInfo->pSetTorchState(pFlashData);
+				dwErr = pInfo->pSetTorchState(pInfo, pFlashData);
 			    UNLOCK(pInfo);
             }
             break;

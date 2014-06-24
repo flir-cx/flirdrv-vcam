@@ -12,6 +12,7 @@
 #include "i2cdev.h"
 #include "faddev.h"
 #include <linux/i2c.h>
+#include <linux/leds.h>
 
 // Definitions
 
@@ -19,8 +20,8 @@
 
 // Function prototypes
 
-static DWORD GetTorchState(VCAMIOCTLFLASH * pFlashData);
-static DWORD SetTorchState(VCAMIOCTLFLASH * pFlashData);
+static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
+static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 
 //-----------------------------------------------------------------------------
@@ -39,6 +40,9 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 DWORD NecoInitHW(PCAM_HW_INDEP_INFO pInfo)
 {
     BOOL ret = TRUE;
+    extern struct list_head leds_list;
+    extern struct rw_semaphore leds_list_lock;
+    struct led_classdev *led_cdev;
 
     pInfo->eCamModel = OV7740;
     pInfo->pGetTorchState = GetTorchState;
@@ -48,6 +52,13 @@ DWORD NecoInitHW(PCAM_HW_INDEP_INFO pInfo)
     pInfo->cameraI2CAddress[0] = 0x42;
     pInfo->cameraI2CAddress[1] = 0;
 
+    // Find torch
+    down_read(&leds_list_lock);
+    list_for_each_entry(led_cdev, &leds_list, node) {
+        if (strcmp(led_cdev->name, "torch") == 0)
+            pInfo->torch_cdev = led_cdev;
+    }
+    up_read(&leds_list_lock);
     return ret;
 }
 
@@ -62,13 +73,17 @@ DWORD NecoInitHW(PCAM_HW_INDEP_INFO pInfo)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD GetTorchState(VCAMIOCTLFLASH * pFlashData)
+DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
-    pFlashData->bTorchOn = FALSE;
+    if (pInfo->torch_cdev)
+        pFlashData->bTorchOn = (pInfo->torch_cdev->brightness) ? TRUE : FALSE;
+    else
+        pFlashData->bTorchOn = FALSE;
     pFlashData->bFlashOn = FALSE;
 
 	return ERROR_SUCCESS;
 }
+
 
 //-----------------------------------------------------------------------------
 //
@@ -81,8 +96,10 @@ DWORD GetTorchState(VCAMIOCTLFLASH * pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD SetTorchState(VCAMIOCTLFLASH * pFlashData)
+DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
+    if (pInfo->torch_cdev)
+        pInfo->torch_cdev->brightness_set(pInfo->torch_cdev, pFlashData->bTorchOn ? 1 : 0);
 	return ERROR_SUCCESS;
 }
 

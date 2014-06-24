@@ -33,13 +33,14 @@ typedef struct __CAM_HW_INDEP_INFO {
     dev_t 					vcam_dev;			// Major.Minor device number
 	struct semaphore		semDevice;			// serialize access to this device's state
 	VCAM_CamModel			eCamModel;			// type/model of visual camera module
-    struct i2c_adapter 	   *hI2C;
+    struct i2c_adapter 	    *hI2C;
+    struct led_classdev     *torch_cdev;
 
     UCHAR					cameraI2CAddress[2];
 
     // Function pointers
-    DWORD (* pGetTorchState) (VCAMIOCTLFLASH * pFlashData);
-    DWORD (* pSetTorchState) (VCAMIOCTLFLASH * pFlashData);
+    DWORD (* pGetTorchState) (struct __CAM_HW_INDEP_INFO * pInfo, VCAMIOCTLFLASH * pFlashData);
+    DWORD (* pSetTorchState) (struct __CAM_HW_INDEP_INFO * pInfo, VCAMIOCTLFLASH * pFlashData);
     void  (* pEnablePower) (struct __CAM_HW_INDEP_INFO * pInfo, BOOL bEnable);
 
 } CAM_HW_INDEP_INFO, *PCAM_HW_INDEP_INFO;

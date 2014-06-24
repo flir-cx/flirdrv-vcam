@@ -180,7 +180,7 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
        		LOCK(pInfo);
 
 			// Callback to platform code to get torch/flash state
-			dwErr = pInfo->pGetTorchState(pFlashData);
+			dwErr = pInfo->pGetTorchState(pInfo, pFlashData);
 	   		UNLOCK(pInfo);
 		}
         break;
