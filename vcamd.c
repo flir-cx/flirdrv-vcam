@@ -87,7 +87,7 @@ static int __init VCAM_Init(void)
         return -4;
     }
     platform_device_add(gpDev->pLinuxDevice);
-	pr_err("VCAM driver device id %d.%d added\n", MAJOR(gpDev->vcam_dev), MINOR(gpDev->vcam_dev));
+	pr_debug("VCAM driver device id %d.%d added\n", MAJOR(gpDev->vcam_dev), MINOR(gpDev->vcam_dev));
 	gpDev->vcam_class = class_create(THIS_MODULE, "vcam");
     device_create(gpDev->vcam_class, NULL, gpDev->vcam_dev, NULL, "vcam0");
 
@@ -96,7 +96,7 @@ static int __init VCAM_Init(void)
 
     gpDev->hI2C = i2c_get_adapter(2);
 
-    pr_err("VCAM I2C driver %p\n", gpDev->hI2C);
+    pr_debug("VCAM I2C driver %p\n", gpDev->hI2C);
 
 	// Init hardware
     if (cpu_is_mx51())
@@ -220,7 +220,7 @@ static long VCAM_IOControl(struct file *filep,
     tmp = kzalloc(_IOC_SIZE(cmd), GFP_KERNEL);
     if (_IOC_DIR(cmd) & _IOC_WRITE)
     {
-		pr_err("VCAM Ioctl %X copy from user: %d\n", cmd, _IOC_SIZE(cmd));
+		pr_debug("VCAM Ioctl %X copy from user: %d\n", cmd, _IOC_SIZE(cmd));
     	dwErr = copy_from_user(tmp, (void *)arg, _IOC_SIZE(cmd));
     	if (dwErr)
     		pr_err("VCAM Copy from user failed: %lu\n", dwErr);
@@ -238,7 +238,7 @@ static long VCAM_IOControl(struct file *filep,
 
     if ((dwErr == ERROR_SUCCESS) && (_IOC_DIR(cmd) & _IOC_READ))
     {
-		pr_err("VCAM Ioctl %X copy to user: %u\n", cmd, _IOC_SIZE(cmd));
+        pr_debug("VCAM Ioctl %X copy to user: %u\n", cmd, _IOC_SIZE(cmd));
     	dwErr = copy_to_user((void *)arg, tmp, _IOC_SIZE(cmd));
     	if (dwErr)
     		pr_err("VCAM Copy to user failed: %ld\n", dwErr);
