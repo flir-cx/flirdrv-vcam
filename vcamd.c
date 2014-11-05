@@ -21,6 +21,15 @@
 #include <linux/platform_device.h>
 #include <linux/i2c.h>
 
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+#include "../arch/arm/mach-imx/hardware.h"
+#ifndef __devexit
+#define __devexit
+#endif
+#endif
+
+
 // Function prototypes
 static long VCAM_IOControl(struct file *filep,
 		unsigned int cmd, unsigned long arg);
