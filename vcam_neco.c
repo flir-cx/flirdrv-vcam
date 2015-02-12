@@ -44,6 +44,7 @@ DWORD NecoInitHW(PCAM_HW_INDEP_INFO pInfo)
     extern struct rw_semaphore leds_list_lock;
     struct led_classdev *led_cdev;
 
+    pInfo->hI2C = i2c_get_adapter(2);
     pInfo->eCamModel = OV7740;
     pInfo->pGetTorchState = GetTorchState;
     pInfo->pSetTorchState = SetTorchState;

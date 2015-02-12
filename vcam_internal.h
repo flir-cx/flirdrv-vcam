@@ -48,7 +48,7 @@ typedef struct __CAM_HW_INDEP_INFO {
 // Hardware specific functions
 DWORD			NecoInitHW(PCAM_HW_INDEP_INFO pInfo);
 DWORD			PicoInitHW(PCAM_HW_INDEP_INFO pInfo);
-
+DWORD			RocoInitHW(PCAM_HW_INDEP_INFO pInfo);
 // Visual camera specific functions
 BOOL MT9P111_Init(PCAM_HW_INDEP_INFO pInfo);
 DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo,
@@ -60,6 +60,13 @@ DWORD OV7740_IOControl(PCAM_HW_INDEP_INFO pInfo,
                         DWORD  Ioctl,
                         PUCHAR pBuf,
                         PUCHAR pUserBuf);
+
+BOOL OV5640_Init(PCAM_HW_INDEP_INFO pInfo);
+DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
+                        DWORD  Ioctl,
+                        PUCHAR pBuf,
+                        PUCHAR pUserBuf);
+
 
 
 #endif //_VCAM_INTERNAL_H_

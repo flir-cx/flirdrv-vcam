@@ -27,8 +27,12 @@
 #ifndef __devexit
 #define __devexit
 #endif
+#define cpu_is_imx6s   cpu_is_imx6dl
+#else  // LINUX_VERSION_CODE
+#include "mach/mx6.h"
+    #define cpu_is_imx6s   cpu_is_mx6dl
+    #define cpu_is_imx6q   cpu_is_mx6q
 #endif
-
 
 // Function prototypes
 static long VCAM_IOControl(struct file *filep,
@@ -103,15 +107,15 @@ static int __init VCAM_Init(void)
 	// initialize this device instance
     sema_init(&gpDev->semDevice, 1);
 
-    gpDev->hI2C = i2c_get_adapter(2);
-
-    pr_debug("VCAM I2C driver %p\n", gpDev->hI2C);
-
-	// Init hardware
+    // Init hardware
     if (cpu_is_mx51())
-    	ret = PicoInitHW(gpDev);
+        ret = PicoInitHW(gpDev);
+    else if(cpu_is_imx6s())
+        ret = NecoInitHW(gpDev);
+    else if(cpu_is_imx6q())
+        ret = RocoInitHW(gpDev);
     else
-    	ret = NecoInitHW(gpDev);
+       {pr_err("FVD: Error: Unkown Hardware\n");return -4;}
 
     if (TRUE != ret)
 	{
@@ -175,7 +179,13 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 						pBuf,
 						pUserBuf);
 
-			default:
+            case OV5640:
+                return OV5640_IOControl(pInfo,
+                        Ioctl,
+                        pBuf,
+                        pUserBuf);
+
+        default:
 				dwErr = ERROR_NOT_SUPPORTED;
 				pr_err ("CAM_Init - camera model undetermined!\n");
 				break;
@@ -289,6 +299,10 @@ static int dummyOpen (struct inode *inode, struct file *filp)
 			case OV7740:
 				OV7740_Init(gpDev);
 				break;
+
+            case OV5640:
+                OV5640_Init(gpDev);
+            break;
 
 			default:
 				pr_err("CAM_Init - camera model undetermined!\n");

@@ -8,8 +8,10 @@ obj-m := vcam.o
 vcam-objs += vcamd.o
 vcam-objs += MT9P111.o
 vcam-objs += OV7740.o
+vcam-objs += OV5640.o
 vcam-objs += vcam_pico.o
 vcam-objs += vcam_neco.o
+vcam-objs += vcam_roco.o
 
 SRC := $(shell pwd)
 

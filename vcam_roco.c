@@ -17,11 +17,16 @@
 
 #define IOPORT_I2C_ADDR     0x46
 
-#define VCM_LED_EN          0
-#define VCM_PWR_EN          1
+
+#define VCM_PWR_EN          0
+#define VCM_1_I2C_EN        1
+//Laser switch on           2
+#define VCM_PWDN            3
 #define VCM_RESET           4
-#define VCM_CLK_EN          6
-#define VCM_I2C_EN          7
+//Laser Soft on             5
+//Optics 5V0                6
+#define VCM_2_I2C_EN        7
+
 
 // Local variables
 
@@ -36,7 +41,7 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 
 //-----------------------------------------------------------------------------
 //
-// Function: PicoInitHW
+// Function: RocoInitHW
 //
 // This function will perform BSP specific initialization.
 //
@@ -47,24 +52,27 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 //
 //-----------------------------------------------------------------------------
 
-DWORD PicoInitHW(PCAM_HW_INDEP_INFO pInfo)
+DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 {
     BOOL ret = TRUE;
-    pInfo->hI2C = i2c_get_adapter(2);
-    pInfo->eCamModel = MT9P111;
+
+    pInfo->hI2C = i2c_get_adapter(1);
+    pInfo->eCamModel = OV5640;
     pInfo->pGetTorchState = GetTorchState;
     pInfo->pSetTorchState = SetTorchState;
     pInfo->pEnablePower = EnablePower;
-    pInfo->cameraI2CAddress[0] = 0x78;
+    pInfo->cameraI2CAddress[0] = 0x78;  //At power on vcam modules will share 0x78 i2c address
     pInfo->cameraI2CAddress[1] = 0x7A;
 
     ret = SetI2CIoport(pInfo, VCM_PWR_EN, FALSE);
     if (ret)
-        ret = SetI2CIoport(pInfo, VCM_RESET, TRUE);
+        ret = SetI2CIoport(pInfo, VCM_RESET, FALSE);
     if (ret)
-        ret = SetI2CIoport(pInfo, VCM_CLK_EN, FALSE);
+        ret = SetI2CIoport(pInfo, VCM_1_I2C_EN, FALSE);
     if (ret)
-        ret = SetI2CIoport(pInfo, VCM_I2C_EN, FALSE);
+        ret = SetI2CIoport(pInfo, VCM_2_I2C_EN, FALSE);
+    if (ret)
+        ret = SetI2CIoport(pInfo, VCM_PWDN, TRUE);
     if (ret)
         ret = InitI2CIoport(pInfo);
 
@@ -111,10 +119,11 @@ BOOL InitI2CIoport (PCAM_HW_INDEP_INFO pInfo)
     	msgs[0].len = 2;
     	msgs[0].buf = buf;
         buf[1] = buf[0] & ~((1 << VCM_PWR_EN) |
-                            (1 << VCM_RESET) |
-                            (1 << VCM_CLK_EN) |
-                            (1 << VCM_I2C_EN));  
-        pr_err("VCAM: IOPORT %02X -> %02X\n", buf[0], buf[1]);
+                            (1 << VCM_1_I2C_EN) |
+                            (1 << VCM_2_I2C_EN) |
+                            (1 << VCM_PWDN) |
+                            (1 << VCM_RESET));
+        pr_debug("VCAM: IOPORT %02X -> %02X\n", buf[0], buf[1]);
         buf[0] = 3;
     	res = i2c_transfer(pInfo->hI2C, msgs, 1);
     }
@@ -126,7 +135,7 @@ BOOL InitI2CIoport (PCAM_HW_INDEP_INFO pInfo)
 //
 // Function: SetI2CIoport
 //
-// This function will set one bit of the ioport on PIRI
+// This function will set one bit of the ioport on RORI
 //
 // Parameters:
 //
@@ -163,7 +172,7 @@ BOOL SetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value)
             buf[1] |= (1 << bit);
         else
             buf[1] &= ~(1 << bit);
-        pr_err("VCAM: IO Set %02X -> %02X\n", buf[0], buf[1]);
+        pr_debug("VCAM: IO Set %02X -> %02X\n", buf[0], buf[1]);
         buf[0] = 1;       // Set output value
 
     	res = i2c_transfer(pInfo->hI2C, msgs, 1);
@@ -177,7 +186,7 @@ BOOL SetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value)
 //
 // Function: GetI2CIoport
 //
-// This function will get one bit of the ioport on PIRI
+// This function will get one bit of the ioport on RORI
 //
 // Parameters:
 //
@@ -247,6 +256,33 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 
 //-----------------------------------------------------------------------------
 //
+// Function:  WriteVcam
+//
+// This function will
+//
+// Parameters:
+//
+// Returns:
+//
+//-----------------------------------------------------------------------------
+DWORD WriteVcam(PCAM_HW_INDEP_INFO pInfo,u8 i2cAddress,u16 address,u8 data)
+{
+    struct i2c_msg msgs[1];
+    UCHAR buf[3];
+
+    msgs[0].addr = i2cAddress >> 1;
+    msgs[0].flags = 0;
+    msgs[0].len = 3;
+    msgs[0].buf = buf;
+    buf[0] = (address >>8) & 0xff;
+    buf[1] = address & 0xff;
+    buf[2] = data;
+
+    return i2c_transfer(pInfo->hI2C, msgs, 1);
+}
+
+//-----------------------------------------------------------------------------
+//
 // Function:  EnablePower
 //
 // This function will control standby/on GPIO usage
@@ -262,19 +298,24 @@ void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
     {
         SetI2CIoport(pInfo, VCM_PWR_EN, TRUE);
         msleep(20);
-        SetI2CIoport(pInfo, VCM_CLK_EN, TRUE);
-        msleep(1);
-        SetI2CIoport(pInfo, VCM_RESET, FALSE);
-        msleep(1);
-        SetI2CIoport(pInfo, VCM_I2C_EN, TRUE);
-    }
-    else
-    {
-        SetI2CIoport(pInfo, VCM_I2C_EN, FALSE);
+        SetI2CIoport(pInfo, VCM_PWDN, FALSE);
         msleep(1);
         SetI2CIoport(pInfo, VCM_RESET, TRUE);
         msleep(1);
-        SetI2CIoport(pInfo, VCM_CLK_EN, FALSE);
+        SetI2CIoport(pInfo, VCM_2_I2C_EN, TRUE);
+        msleep(1); //Change vcam2 i2c address from 0x78 to 0x7a
+        WriteVcam(pInfo,pInfo->cameraI2CAddress[0],0x3100,pInfo->cameraI2CAddress[1]);
+        SetI2CIoport(pInfo, VCM_1_I2C_EN, TRUE);
+    }
+    else
+    {
+        SetI2CIoport(pInfo, VCM_2_I2C_EN, FALSE);
+        msleep(1);
+        SetI2CIoport(pInfo, VCM_1_I2C_EN, FALSE);
+        msleep(1);
+        SetI2CIoport(pInfo, VCM_RESET, FALSE);
+        msleep(1);
+        SetI2CIoport(pInfo, VCM_PWDN, TRUE);
         msleep(1);
         SetI2CIoport(pInfo, VCM_PWR_EN, FALSE);
     }
