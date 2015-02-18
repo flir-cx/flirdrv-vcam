@@ -47,7 +47,6 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
                          PUCHAR pUserBuf);
 
 static PCAM_HW_INDEP_INFO gpDev;
-
 static struct file_operations vcam_fops =
 {
 		.owner = THIS_MODULE,
@@ -76,7 +75,7 @@ static int __init VCAM_Init(void)
     gpDev = (PCAM_HW_INDEP_INFO)kmalloc(sizeof(CAM_HW_INDEP_INFO), GFP_KERNEL);
     if ( !gpDev ) {
     	pr_err("Error allocating memory for pDev, VCAM_Init failed\n");
-        return -2;
+       goto err_alloc;
     }
 
     // Reset all data
@@ -91,13 +90,13 @@ static int __init VCAM_Init(void)
     if (i)
     {
     	pr_err("Error adding device driver\n");
-        return -3;
+        goto err_chrdev;
     }
     gpDev->pLinuxDevice = platform_device_alloc("vcam", 1);
     if (gpDev->pLinuxDevice == NULL)
     {
     	pr_err("Error adding allocating device\n");
-        return -4;
+        goto err_platform;
     }
     platform_device_add(gpDev->pLinuxDevice);
 	pr_debug("VCAM driver device id %d.%d added\n", MAJOR(gpDev->vcam_dev), MINOR(gpDev->vcam_dev));
@@ -115,15 +114,29 @@ static int __init VCAM_Init(void)
     else if(cpu_is_imx6q())
         ret = RocoInitHW(gpDev);
     else
-       {pr_err("FVD: Error: Unkown Hardware\n");return -4;}
+       {pr_err("FVD: Error: Unkown Hardware\n");goto err_all;}
 
     if (TRUE != ret)
 	{
-		pr_err ("CAM_Init - falied to init hardware!\n");
-		return -5;
+        pr_err ("VCAM_Init - falied to init hardware!\n");
+        goto err_all;
 	}
 
 	return 0;
+
+
+err_all:
+    device_destroy(gpDev->vcam_class, gpDev->vcam_dev);
+    class_destroy(gpDev->vcam_class);
+    platform_device_unregister(gpDev->pLinuxDevice);
+err_platform:
+err_chrdev:
+    unregister_chrdev_region(gpDev->vcam_dev, 1);
+    kfree(gpDev);
+    gpDev = NULL;
+err_alloc:
+
+    return -5;
 }
 
 static void __devexit VCAM_Deinit(void)
