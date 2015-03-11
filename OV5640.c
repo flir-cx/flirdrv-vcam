@@ -426,6 +426,43 @@ static struct reg_value ov5640_setting_30fps_720P_1280_720[] = {
     {0x3008, 0x02}, {0x3503, 0},
 };
 
+/*
+     Configure vcam for 1280x960.
+     No scaling from full sensor image, instead cut out center image.
+     See OV5640 datasheet image windowing configuration for more information
+
+    (X_address_end - DVP_width) / 2 = ISP_horizontal_offset
+    (2623 - 1280) / 2 = 671 = 0x2a3
+    (Y_address_end - DVP_height) / 2 = ISP_vertical_offset
+    (1951 - 960) / 2 = 495 = 0x1ef
+
+*/
+static struct reg_value ov5640_setting_30fps_1280_960[] = {
+    {0x3008, 0x42},
+    {0x3035, 0x21}, {0x3036, 0x54}, {0x3c07, 0x07},
+    {0x3c09, 0x1c}, {0x3c0a, 0x9c}, {0x3c0b, 0x40},
+    {0x3820, 0x41}, {0x3821, 0x07}, {0x3814, 0x31},
+    {0x3815, 0x31},
+    {0x3800, 0x00}, {0x3801, 0x00}, //X address start = 0
+    {0x3802, 0x00}, {0x3803, 0x00}, //Y address start = 0
+    {0x3804, 0x0a}, {0x3805, 0x3f}, //X address end   = 0xa3f (2623)
+    {0x3806, 0x07}, {0x3807, 0x9f}, //Y address end   = 0x79f (1951)
+    {0x3808, 0x05}, {0x3809, 0x00}, //DVP width  output size = 0x500   (1280)
+    {0x380a, 0x03}, {0x380b, 0xc0}, //DVP height output size = 0x3c0   (960)
+    {0x380c, 0x0b}, {0x380d, 0x1c}, // Total horizontal size = 0xb1c
+    {0x380e, 0x07}, {0x380f, 0xb0}, // Total vertical size  =  0x7b0
+    {0x3810, 0x02}, {0x3811, 0xa3}, // ISP horizontal offset = 0x2a3
+    {0x3812, 0x01}, {0x3813, 0xef}, // ISP vertical   offset = 0x1ef
+    {0x3618, 0x00}, {0x3612, 0x29}, {0x3708, 0x64},
+    {0x3709, 0x52}, {0x370c, 0x03}, {0x3a02, 0x02},
+    {0x3a03, 0xe4}, {0x3a08, 0x01}, {0x3a09, 0xbc},
+    {0x3a0a, 0x01}, {0x3a0b, 0x72}, {0x3a0e, 0x01},
+    {0x3a0d, 0x02}, {0x3a14, 0x02}, {0x3a15, 0xe4},
+    {0x4001, 0x02}, {0x4004, 0x02}, {0x4713, 0x02},
+    {0x4407, 0x04}, {0x460b, 0x37}, {0x460c, 0x20},
+    {0x3824, 0x04}, {0x5001, 0x83}, {0x4005, 0x1a},
+    {0x3008, 0x02}, {0x3503, 0},
+};
 
 
 static BOOL DoI2CWrite (PCAM_HW_INDEP_INFO pInfo,
@@ -538,11 +575,21 @@ static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
 {
     BOOL ret = TRUE;
 
-    //ret = DoI2CWrite(pInfo, ov5640_init_setting_15fps_5MP, dim(ov5640_init_setting_15fps_5MP), cam);
+    ret = DoI2CWrite(pInfo, ov5640_init_setting_15fps_5MP, dim(ov5640_init_setting_15fps_5MP), cam);
+    if(ret)
+         return ret;
+//    ret = DoI2CWrite(pInfo, ov5640_init_setting_30fps_VGA, dim(ov5640_init_setting_30fps_VGA), cam);
+//    if(ret)
+//       return ret;
+//    ret = DoI2CWrite(pInfo, ov5640_setting_30fps_VGA_640_480, dim(ov5640_setting_30fps_VGA_640_480), cam);
+//    if(ret)
+//       return ret;
 
-    ret = DoI2CWrite(pInfo, ov5640_init_setting_30fps_VGA, dim(ov5640_init_setting_30fps_VGA), cam);
-    ret = DoI2CWrite(pInfo, ov5640_setting_30fps_VGA_640_480, dim(ov5640_setting_30fps_VGA_640_480), cam);
-
+//    OV5640_stream_off(pInfo,cam);
+//    ret = DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960, dim(ov5640_setting_30fps_1280_960), cam);
+//    if(ret)
+//       return ret;
+//    OV5640_stream_on(pInfo,cam);
 
 	return ret;
 }
