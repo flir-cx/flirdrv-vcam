@@ -466,6 +466,43 @@ static struct reg_value ov5640_setting_30fps_720P_1280_720[] = {
     {0x3824, 0x04}, {0x5001, 0x83}, {0x4005, 0x1a},
     {0x3008, 0x02}, {0x3503, 0},
 };
+/*
+ *
+ *
+ * settings based on ov5640_setting_30fps_720P_1280_720
+ *
+ * mode timings from http://confluence-se/display/IN/vcam+modes
+ *
+ * vcam fov=55 used with IR lens fov=45
+*/
+static struct reg_value ov5640_setting_30fps_1280_960_HFOV55[] = {
+    {0x3008, 0x42},
+    {0x3035, 0x21}, {0x3036, 0x5c}, {0x3c07, 0x07},
+    {0x3c09, 0x1c}, {0x3c0a, 0x9c}, {0x3c0b, 0x40},
+    {0x3820, 0x41}, {0x3821, 0x07},
+    {0x3814, 0x31}, //Horizontal subsamble increment
+    {0x3815, 0x31}, //Vertical   subsamble increment
+    {0x3800, 0x00}, {0x3801, 0x00}, //X address start = 0x0
+    {0x3802, 0x00}, {0x3803, 0x04}, //Y address start = 0x4
+    {0x3804, 0x0a}, {0x3805, 0x3f}, //X address end   = 0xa3f
+    {0x3806, 0x07}, {0x3807, 0x9b}, //Y address end   = 0x79b
+    {0x3808, 0x05}, {0x3809, 0x00}, //DVP width  output size = 0x500   (1280)
+    {0x380a, 0x03}, {0x380b, 0xc0}, //DVP height output size = 0x3c0   (960)
+    {0x380c, 0x06}, {0x380d, 0x00}, // Total horizontal size = 0x600   (1536)
+    {0x380e, 0x03}, {0x380f, 0xd8}, // Total vertical size  =  0x3d8   (984)
+    {0x3810, 0x00}, {0x3811, 0x10}, // ISP horizontal offset = 0x10
+    {0x3812, 0x00}, {0x3813, 0x06}, // ISP vertical   offset = 0x6
+    {0x3618, 0x00}, {0x3612, 0x29}, {0x3708, 0x64},
+    {0x3709, 0x52}, {0x370c, 0x03}, {0x3a02, 0x02},
+    {0x3a03, 0xe4}, {0x3a08, 0x01}, {0x3a09, 0xbc},
+    {0x3a0a, 0x01}, {0x3a0b, 0x72}, {0x3a0e, 0x01},
+    {0x3a0d, 0x02}, {0x3a14, 0x02}, {0x3a15, 0xe4},
+    {0x4001, 0x02}, {0x4004, 0x02}, {0x4713, 0x02},
+    {0x4407, 0x04}, {0x460b, 0x37}, {0x460c, 0x20},
+    {0x3824, 0x04}, {0x5001, 0x83}, {0x4005, 0x1a},
+    {0x3008, 0x02}, {0x3503, 0},
+};
+
 
 /*
  *
@@ -474,14 +511,13 @@ static struct reg_value ov5640_setting_30fps_720P_1280_720[] = {
  *
  * mode timings from http://confluence-se/display/IN/vcam+modes
  *
- * When using an ir lens with fov=28
- * Use, this mode, vcam fov=39
+ * vcam fov=39 used with IR lens fov=28
 */
 static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[] = {
     {0x3008, 0x42},
     {0x3035, 0x12}, {0x3036, 0x60}, {0x3c07, 0x07},
     {0x3c09, 0x1c}, {0x3c0a, 0x9c}, {0x3c0b, 0x40},
-    {0x3820, 0x41}, {0x3821, 0x07},
+    {0x3820, 0x41}, {0x3821, 0x06},
     {0x3814, 0x11}, //Horizontal subsamble increment
     {0x3815, 0x11}, //Vertical   subsamble increment
     {0x3800, 0x01}, {0x3801, 0x8c}, //X address start = 0x18c
@@ -513,14 +549,14 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[] = {
  *
  * mode timings from http://confluence-se/display/IN/vcam+modes
  *
- * When using an ir lens with fov=12
- * Use, this mode, vcam fov=29
+ * vcam fov=29 used with IR lens fov=12
+ *
 */
 static struct reg_value ov5640_setting_30fps_1280_960_HFOV29[] = {
     {0x3008, 0x42},
     {0x3035, 0x21}, {0x3036, 0x5c}, {0x3c07, 0x07},
     {0x3c09, 0x1c}, {0x3c0a, 0x9c}, {0x3c0b, 0x40},
-    {0x3820, 0x41}, {0x3821, 0x07},
+    {0x3820, 0x41}, {0x3821, 0x06},
     {0x3814, 0x11}, //Horizontal subsamble increment
     {0x3815, 0x11}, //Vertical   subsamble increment
     {0x3800, 0x02}, {0x3801, 0x90}, //X address start = 0x290
@@ -753,7 +789,7 @@ static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
     ret = DoI2CWrite(pInfo, ov5640_init_setting_15fps_5MP, dim(ov5640_init_setting_15fps_5MP), cam);
 
     OV5640_stream_off(pInfo,cam);
-    ret = DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV39, dim(ov5640_setting_30fps_1280_960_HFOV39), cam);
+    ret = DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV55, dim(ov5640_setting_30fps_1280_960_HFOV55), cam);
     OV5640_stream_on(pInfo,cam);
 
 	return ret;
@@ -761,7 +797,7 @@ static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
 
 BOOL OV5640_Init(PCAM_HW_INDEP_INFO pInfo)
 {
-    initCamera(pInfo, TRUE, CAM_1);
+    initCamera(pInfo, TRUE, CAM_ALL);
     /*if (bCamActive[CAM_1] == FALSE)
 		DoI2CWrite(pInfo, I2CDataStandByEnter[0], dim(I2CDataStandByEnter), 0, 0, 0, CAM_1);
 	if (bCamActive[CAM_2] == FALSE)
