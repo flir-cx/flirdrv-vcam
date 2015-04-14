@@ -118,7 +118,7 @@ static int __init VCAM_Init(void)
 
     if (TRUE != ret)
 	{
-        pr_err ("VCAM_Init - falied to init hardware!\n");
+        pr_err ("VCAM_Init - failed to init hardware!\n");
         goto err_all;
 	}
 
