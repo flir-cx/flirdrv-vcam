@@ -33,6 +33,8 @@ typedef enum {CAM_1, CAM_2, CAM_ALL} CAM_NO;
 // Local variables
 static BOOL bCamActive[CAM_ALL] = { TRUE, FALSE };
 
+static int vcamFOV;
+
 struct reg_value {
     u16 u16RegAddr;
     u8 u8Val;
@@ -1470,7 +1472,7 @@ static struct reg_value ov5640_setting_30fps_720P_1280_720[] = {
  *
  * vcam fov=55 used with IR lens fov=45
 */
-static struct reg_value ov5640_setting_30fps_1280_960_HFOV55[] = {
+static struct reg_value ov5640_setting_30fps_1280_960_HFOV54[] = {
     {0x3008, 0x42},
     {0x3035, 0x21}, {0x3036, 0x5c}, {0x3c07, 0x07},
     {0x3c09, 0x1c}, {0x3c0a, 0x9c}, {0x3c0b, 0x40},
@@ -1483,10 +1485,10 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV55[] = {
     {0x3806, 0x07}, {0x3807, 0x9b}, //Y address end   = 0x79b
     {0x3808, 0x05}, {0x3809, 0x00}, //DVP width  output size = 0x500   (1280)
     {0x380a, 0x03}, {0x380b, 0xc0}, //DVP height output size = 0x3c0   (960)
-    {0x380c, 0x06}, {0x380d, 0x00}, // Total horizontal size = 0x600   (1536)
+    {0x380c, 0x06}, {0x380d, 0x40}, // Total horizontal size = 0x640   ()
     {0x380e, 0x03}, {0x380f, 0xd8}, // Total vertical size  =  0x3d8   (984)
     {0x3810, 0x00}, {0x3811, 0x10}, // ISP horizontal offset = 0x10
-    {0x3812, 0x00}, {0x3813, 0x06}, // ISP vertical   offset = 0x6
+    {0x3812, 0x00}, {0x3813, 0x00}, // ISP vertical   offset = 0x0
     {0x3618, 0x00}, {0x3612, 0x29}, {0x3708, 0x64},
     {0x3709, 0x52}, {0x370c, 0x03}, {0x3a02, 0x02},
     {0x3a03, 0xe4}, {0x3a08, 0x01}, {0x3a09, 0xbc},
@@ -1518,7 +1520,7 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[] = {
     {0x3800, 0x01}, {0x3801, 0x8c}, //X address start = 0x18c
     {0x3802, 0x01}, {0x3803, 0x26}, //Y address start = 0x126
     {0x3804, 0x08}, {0x3805, 0xb3}, //X address end   = 0x8b3
-    {0x3806, 0x06}, {0x3807, 0x78}, //Y address end   = 0x678
+    {0x3806, 0x06}, {0x3807, 0x77}, //Y address end   = 0x677
     {0x3808, 0x05}, {0x3809, 0x00}, //DVP width  output size = 0x500   (1280)
     {0x380a, 0x03}, {0x380b, 0xc0}, //DVP height output size = 0x3c0   (960)
     {0x380c, 0x08}, {0x380d, 0x00}, // Total horizontal size = 0x800   (2048)
@@ -1544,10 +1546,10 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[] = {
  *
  * mode timings from http://confluence-se/display/IN/vcam+modes
  *
- * vcam fov=29 used with IR lens fov=12
+ * vcam fov=28 used with IR lens fov=12
  *
 */
-static struct reg_value ov5640_setting_30fps_1280_960_HFOV29[] = {
+static struct reg_value ov5640_setting_30fps_1280_960_HFOV28[] = {
     {0x3008, 0x42},
     {0x3035, 0x21}, {0x3036, 0x5c}, {0x3c07, 0x07},
     {0x3c09, 0x1c}, {0x3c0a, 0x9c}, {0x3c0b, 0x40},
@@ -1574,7 +1576,7 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV29[] = {
     {0x3824, 0x04}, {0x5001, 0x83}, {0x4005, 0x1a},
     {0x3008, 0x02}, {0x3503, 0},
 };
-
+#if 0
 static struct reg_value ov5640_setting_30fps_1280_960[] = {
     {0x3008, 0x42},
     {0x3035, 0x21}, {0x3036, 0x54}, {0x3c07, 0x07},
@@ -1601,7 +1603,7 @@ static struct reg_value ov5640_setting_30fps_1280_960[] = {
     {0x3824, 0x04}, {0x5001, 0x83}, {0x4005, 0x1a},
     {0x3008, 0x02}, {0x3503, 0},
 };
-#if 0
+
 static struct reg_value sensor_sxga_regs[] = { //SXGA: 1280*960
 //capture 1.3Mega 5fps
 //power down
@@ -1715,7 +1717,7 @@ static BOOL DoI2CWrite (PCAM_HW_INDEP_INFO pInfo,
                 if (retries-- <= 0)
                 {
                     pr_err("VCAM: DoI2CWrite failing on element %d of %d\n", i, elements);
-                    return FALSE;       // Too many errors, give up
+                    return ERROR_NOT_SUPPORTED;       // Too many errors, give up
                 }
                 msleep (10);
                 i--;
@@ -1724,7 +1726,7 @@ static BOOL DoI2CWrite (PCAM_HW_INDEP_INFO pInfo,
         }
     }
 
-    return TRUE;
+    return ERROR_SUCCESS;
 }
 #if 0
 static BOOL DoI2CRead (PCAM_HW_INDEP_INFO pInfo, USHORT *result, USHORT reg, CAM_NO camera)
@@ -1794,24 +1796,52 @@ void OV5640_autofocus_off(PCAM_HW_INDEP_INFO pInfo,CAM_NO camera)
 }
 
 
+static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam,int fov)
+{
+    int ret;
+    OV5640_stream_off(pInfo,cam);
 
+    switch(fov)
+    {
+    case 54:
+        ret = DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54, dim(ov5640_setting_30fps_1280_960_HFOV54), cam);
+        vcamFOV =fov;
+        break;
 
+    case 39:
+        ret = DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV39, dim(ov5640_setting_30fps_1280_960_HFOV39), cam);
+        vcamFOV =fov;
+        break;
+
+    case 28:
+        ret = DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV28, dim(ov5640_setting_30fps_1280_960_HFOV28), cam);
+        vcamFOV =fov;
+        break;
+
+    default:
+        ret = ERROR_NOT_SUPPORTED;
+    }
+
+    OV5640_stream_on(pInfo,cam);
+
+    return ret;
+}
 
 
 static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
 {
-    BOOL ret = TRUE;
+    BOOL ret = ERROR_SUCCESS;
 
     ret = DoI2CWrite(pInfo, ov5640_init_setting_15fps_5MP, dim(ov5640_init_setting_15fps_5MP), cam);
-
+    if(ret)
+        return ret;
     ret = DoI2CWrite(pInfo, ov5640_af_reg, dim(ov5640_af_reg), cam);
+    if(ret)
+        return ret;
 
-
-
-
-    OV5640_stream_off(pInfo,cam);
-    ret = DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV55, dim(ov5640_setting_30fps_1280_960_HFOV55), cam);
-    OV5640_stream_on(pInfo,cam);
+    ret = OV5640_set_fov(pInfo,cam,54);
+    if(ret)
+        return ret;
 
 
   //  OV5640_autofocus_on(pInfo,cam);
@@ -1928,6 +1958,25 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 
                 dwErr = ERROR_SUCCESS;
     			UNLOCK(pInfo);
+            }
+            break;
+
+        case IOCTL_CAM_SET_FOV:
+            {
+                VCAMIOCTLFOV * pVcamFOV = (VCAMIOCTLFOV *) pBuf;
+                LOCK(pInfo);
+
+                dwErr = OV5640_set_fov(pInfo,CAM_ALL,pVcamFOV->fov);
+
+                UNLOCK(pInfo);
+            }
+            break;
+        case IOCTL_CAM_GET_FOV:
+            {
+                LOCK(pInfo);
+                ((VCAMIOCTLFOV *)pBuf)->fov = vcamFOV;
+                dwErr = ERROR_SUCCESS;
+                UNLOCK(pInfo);
             }
             break;
 
