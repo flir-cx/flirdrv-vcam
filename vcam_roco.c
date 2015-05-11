@@ -12,6 +12,7 @@
 #include "i2cdev.h"
 #include "faddev.h"
 #include <linux/i2c.h>
+#include <linux/leds.h>
 
 // Definitions
 
@@ -55,6 +56,9 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 {
     BOOL ret = TRUE;
+    extern struct list_head leds_list;
+    extern struct rw_semaphore leds_list_lock;
+    struct led_classdev *led_cdev;
 
     pInfo->hI2C = i2c_get_adapter(1);
     pInfo->eCamModel = OV5640;
@@ -63,6 +67,18 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
     pInfo->pEnablePower = EnablePower;
     pInfo->cameraI2CAddress[0] = 0x78;  //At power on vcam modules will share 0x78 i2c address
     pInfo->cameraI2CAddress[1] = 0x7A;
+
+    // Find torch
+    down_read(&leds_list_lock);
+    list_for_each_entry(led_cdev, &leds_list, node) {
+	    if (strcmp(led_cdev->name, "torch") == 0){
+		    pr_err("*** Found led with name torch\n");
+		    pInfo->torch_cdev = led_cdev;
+	    } else {
+		    pr_err("Found led with name %s\n", led_cdev->name);
+	    }
+    }
+    up_read(&leds_list_lock);
 
     ret = SetI2CIoport(pInfo, VCM_PWR_EN, FALSE);
     if (ret)
@@ -232,10 +248,13 @@ BOOL GetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit)
 //-----------------------------------------------------------------------------
 DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
-    pFlashData->bTorchOn = FALSE;
-    pFlashData->bFlashOn = FALSE;
+    if (pInfo->torch_cdev)
+        pFlashData->bTorchOn = (pInfo->torch_cdev->brightness) ? TRUE : FALSE;
+    else
+        pFlashData->bTorchOn = FALSE;
 
-	return ERROR_SUCCESS;
+    pFlashData->bFlashOn = FALSE;
+    return ERROR_SUCCESS;
 }
 
 //-----------------------------------------------------------------------------
@@ -251,6 +270,12 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 //-----------------------------------------------------------------------------
 DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
+    if (pInfo->torch_cdev)
+    {
+        pInfo->torch_cdev->brightness = pFlashData->bTorchOn ? 1 : 0;
+        pInfo->torch_cdev->brightness_set(pInfo->torch_cdev, pInfo->torch_cdev->brightness);
+    }
+
 	return ERROR_SUCCESS;
 }
 
