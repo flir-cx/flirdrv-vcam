@@ -14,6 +14,13 @@
 #include <linux/i2c.h>
 #include <linux/leds.h>
 
+#ifdef CONFIG_OF
+#include <linux/of_gpio.h>
+#include <linux/of.h>
+#include <linux/regulator/consumer.h>
+#include <linux/regulator/of_regulator.h>
+#endif
+
 // Definitions
 
 #define IOPORT_I2C_ADDR     0x46
@@ -32,13 +39,14 @@
 // Local variables
 
 // Function prototypes
-static BOOL InitI2CIoport (PCAM_HW_INDEP_INFO pInfo);
-static BOOL SetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value);
-// static BOOL GetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit);
-
 static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
+
+#ifdef CONFIG_OF
+static int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int * ppin, char * of_name, int value );
+static int requestRegulator(PCAM_HW_INDEP_INFO pInfo,struct regulator ** reg, char * of_name,int enable);
+#endif
 
 //-----------------------------------------------------------------------------
 //
@@ -68,6 +76,11 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
     pInfo->cameraI2CAddress[0] = 0x78;  //At power on vcam modules will share 0x78 i2c address
     pInfo->cameraI2CAddress[1] = 0x7A;
 
+ #ifdef CONFIG_OF
+    pInfo->node = of_find_compatible_node(NULL, NULL, "flir,vcam");
+    if(!pInfo->node)
+        pr_err("VCAM: Missing devicetree configuration\n");
+
     // Find torch
     down_read(&leds_list_lock);
     list_for_each_entry(led_cdev, &leds_list, node) {
@@ -75,165 +88,76 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 		    pr_err("*** Found led with name torch\n");
 		    pInfo->torch_cdev = led_cdev;
 	    } else {
-		    pr_err("Found led with name %s\n", led_cdev->name);
+		  //  pr_err("Found led with name %s\n", led_cdev->name);
 	    }
     }
     up_read(&leds_list_lock);
 
-    ret = SetI2CIoport(pInfo, VCM_PWR_EN, FALSE);
-    if (ret)
-        ret = SetI2CIoport(pInfo, VCM_RESET, FALSE);
-    if (ret)
-        ret = SetI2CIoport(pInfo, VCM_1_I2C_EN, FALSE);
-    if (ret)
-        ret = SetI2CIoport(pInfo, VCM_2_I2C_EN, FALSE);
-    if (ret)
-        ret = SetI2CIoport(pInfo, VCM_PWDN, TRUE);
-    if (ret)
-        ret = InitI2CIoport(pInfo);
+    ret =requestGPIOpin(pInfo,&pInfo->reset_gpio,"vcam_reset-gpio",0);
+    if(!ret)
+        ret = requestRegulator(pInfo,&pInfo->reg_vcm,"rori_vcm",0);
+    if(!ret)
+        ret = requestRegulator(pInfo,&pInfo->reg_vcm1i2c,"rori_vcm1_i2c_en",0);
+    if(!ret)
+        ret = requestRegulator(pInfo,&pInfo->reg_vcm2i2c,"rori_vcm2_i2c_en",0);
+    if(!ret)
+        ret = requestGPIOpin(pInfo,&pInfo->pwdn_gpio,"vcam_pwdn-gpio",1);
 
-    if (ret)
+    if (!ret)
         EnablePower(pInfo, TRUE);
-    return ret;
+
+#endif
+    return (ret==0);
 }
 
 
-
-//-----------------------------------------------------------------------------
-//
-// Function: InitI2CIoport
-//
-// This function will set up the ioport on PIRI as outputs
-//
-// Parameters:
-//
-// Returns:
-//      Returns status of init code.
-//
-//-----------------------------------------------------------------------------
-
-BOOL InitI2CIoport (PCAM_HW_INDEP_INFO pInfo)
+ #ifdef CONFIG_OF
+int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int * ppin, char * of_name, int value )
 {
-	struct i2c_msg msgs[2];
-    int res;
-    UCHAR buf[2];
-    UCHAR cmd;
-    msgs[0].addr = IOPORT_I2C_ADDR >> 1;
-	msgs[0].flags = 0;
-	msgs[0].len = 1;
-	msgs[0].buf = &cmd;
-    msgs[1].addr = IOPORT_I2C_ADDR >> 1;
-	msgs[1].flags = I2C_M_RD;
-	msgs[1].len = 1;
-	msgs[1].buf = buf;
-
-    cmd = 3;    // Read config register
-	res = i2c_transfer(pInfo->hI2C, msgs, 2);
-
-    if (res > 0)
-    {
-    	msgs[0].len = 2;
-    	msgs[0].buf = buf;
-        buf[1] = buf[0] & ~((1 << VCM_PWR_EN) |
-                            (1 << VCM_1_I2C_EN) |
-                            (1 << VCM_2_I2C_EN) |
-                            (1 << VCM_PWDN) |
-                            (1 << VCM_RESET));
-        pr_debug("VCAM: IOPORT %02X -> %02X\n", buf[0], buf[1]);
-        buf[0] = 3;
-    	res = i2c_transfer(pInfo->hI2C, msgs, 1);
+    int pin,retval=-1;
+    pin = of_get_named_gpio_flags(pInfo->node, of_name, 0, NULL);
+    if (gpio_is_valid(pin) == 0){
+        pr_err("VCAM: %s  can not be used\n",of_name);
+    } else {
+        *ppin = pin;
+        retval = gpio_request(pin, of_name);
+        if(retval){
+            pr_err("VCAM: Fail registering %s",of_name);
+        }
+        retval = gpio_direction_output(pin, value);
+        if(retval){
+            pr_err("VCAM: Fail setting direction for %s",of_name);
+        }
     }
+    return retval;
 
-    return (res > 0);
 }
 
-//-----------------------------------------------------------------------------
-//
-// Function: SetI2CIoport
-//
-// This function will set one bit of the ioport on RORI
-//
-// Parameters:
-//
-// Returns:
-//      Returns status of set operation.
-//
-//-----------------------------------------------------------------------------
-
-BOOL SetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value)
+int requestRegulator(PCAM_HW_INDEP_INFO pInfo,struct regulator ** reg, char * of_name,int enable)
 {
-	struct i2c_msg msgs[2];
-    int res;
-    UCHAR buf[2];
-    UCHAR cmd;
+    int retval = -1;
+    *reg = regulator_get(pInfo->dev, of_name);
+	if(IS_ERR(*reg))
+	{
+		pr_err("VCAM: Error on %s get\n",of_name);
+	}
+	else
+	{
+        retval =0;
+		if(enable)
+            retval = regulator_enable(*reg);
+        else if(regulator_is_enabled(*reg))
+            retval = regulator_disable(*reg);
 
-    msgs[0].addr = IOPORT_I2C_ADDR >> 1;
-	msgs[0].flags = 0;
-	msgs[0].len = 1;
-	msgs[0].buf = &cmd;
-    msgs[1].addr = IOPORT_I2C_ADDR >> 1;
-	msgs[1].flags = I2C_M_RD;
-	msgs[1].len = 1;
-	msgs[1].buf = buf;
+		if (retval){
+			pr_err("VCAM: Could not %s %s regulator\n",enable?"enable":"disable",of_name);
+		}
+	}
 
-    cmd = 1;    // Read output register
-	res = i2c_transfer(pInfo->hI2C, msgs, 2);
-
-    if (res > 0)
-    {
-    	msgs[0].len = 2;
-    	msgs[0].buf = buf;
-        buf[1] = buf[0];  // Initial value before changes
-        if (value)
-            buf[1] |= (1 << bit);
-        else
-            buf[1] &= ~(1 << bit);
-        pr_debug("VCAM: IO Set %02X -> %02X\n", buf[0], buf[1]);
-        buf[0] = 1;       // Set output value
-
-    	res = i2c_transfer(pInfo->hI2C, msgs, 1);
-    }
-
-    return (res > 0);
-}
-
-#if 0
-//-----------------------------------------------------------------------------
-//
-// Function: GetI2CIoport
-//
-// This function will get one bit of the ioport on RORI
-//
-// Parameters:
-//
-// Returns:
-//      Returns status of bit.
-//
-//-----------------------------------------------------------------------------
-
-BOOL GetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit)
-{
-	struct i2c_msg msgs[2];
-    int res;
-    UCHAR buf[2];
-    UCHAR cmd;
-
-    msgs[0].addr = IOPORT_I2C_ADDR >> 1;
-	msgs[0].flags = 0;
-	msgs[0].len = 1;
-	msgs[0].buf = &cmd;
-    msgs[1].addr = IOPORT_I2C_ADDR >> 1;
-	msgs[1].flags = I2C_M_RD;
-	msgs[1].len = 1;
-	msgs[1].buf = buf;
-
-    cmd = 0;    // Read port register
-    buf[0] = 0;
-	res = i2c_transfer(pInfo->hI2C, msgs, 2);
-
-    return ((buf[0] & (1 << bit)) != 0);
+    return retval;
 }
 #endif
+
 
 //-----------------------------------------------------------------------------
 //
@@ -319,29 +243,32 @@ DWORD WriteVcam(PCAM_HW_INDEP_INFO pInfo,u8 i2cAddress,u16 address,u8 data)
 //-----------------------------------------------------------------------------
 void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 {
+   int ret=0;
+#ifdef CONFIG_OF
     if (bEnable)
     {
-        SetI2CIoport(pInfo, VCM_PWR_EN, TRUE);
+        ret=regulator_enable(pInfo->reg_vcm);
         msleep(20);
-        SetI2CIoport(pInfo, VCM_PWDN, FALSE);
+        gpio_direction_output(pInfo->pwdn_gpio, 0);
         msleep(1);
-        SetI2CIoport(pInfo, VCM_RESET, TRUE);
+        gpio_direction_output(pInfo->reset_gpio, 1);
         msleep(1);
-        SetI2CIoport(pInfo, VCM_2_I2C_EN, TRUE);
+        ret=regulator_enable(pInfo->reg_vcm2i2c);
         msleep(1); //Change vcam2 i2c address from 0x78 to 0x7a
         WriteVcam(pInfo,pInfo->cameraI2CAddress[0],0x3100,pInfo->cameraI2CAddress[1]);
-        SetI2CIoport(pInfo, VCM_1_I2C_EN, TRUE);
+        ret= regulator_enable(pInfo->reg_vcm1i2c);
     }
     else
     {
-        SetI2CIoport(pInfo, VCM_2_I2C_EN, FALSE);
+        ret=regulator_disable(pInfo->reg_vcm1i2c);
         msleep(1);
-        SetI2CIoport(pInfo, VCM_1_I2C_EN, FALSE);
+        ret=regulator_disable(pInfo->reg_vcm2i2c);
         msleep(1);
-        SetI2CIoport(pInfo, VCM_RESET, FALSE);
+        gpio_direction_output(pInfo->reset_gpio, 0);
         msleep(1);
-        SetI2CIoport(pInfo, VCM_PWDN, TRUE);
+        gpio_direction_output(pInfo->pwdn_gpio, 1);
         msleep(1);
-        SetI2CIoport(pInfo, VCM_PWR_EN, FALSE);
+        ret=regulator_disable(pInfo->reg_vcm);
     }
+#endif
 }

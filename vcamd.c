@@ -22,6 +22,13 @@
 #include <linux/i2c.h>
 #include <linux/version.h>
 
+#ifdef CONFIG_OF
+#include <linux/of_gpio.h>
+#include <linux/of.h>
+#include <linux/regulator/consumer.h>
+#include <linux/regulator/of_regulator.h>
+#endif
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 #include "../arch/arm/mach-imx/hardware.h"
 #ifndef __devexit
@@ -101,7 +108,7 @@ static int __init VCAM_Init(void)
     platform_device_add(gpDev->pLinuxDevice);
 	pr_debug("VCAM driver device id %d.%d added\n", MAJOR(gpDev->vcam_dev), MINOR(gpDev->vcam_dev));
 	gpDev->vcam_class = class_create(THIS_MODULE, "vcam");
-    device_create(gpDev->vcam_class, NULL, gpDev->vcam_dev, NULL, "vcam0");
+    gpDev->dev = device_create(gpDev->vcam_class, NULL, gpDev->vcam_dev, NULL, "vcam0");
 
 	// initialize this device instance
     sema_init(&gpDev->semDevice, 1);
@@ -149,12 +156,33 @@ static void __devexit VCAM_Deinit(void)
     {
         i2c_put_adapter(gpDev->hI2C);
 
+#ifdef CONFIG_OF
+        if(gpDev->reg_vcm1i2c){
+            regulator_put(gpDev->reg_vcm1i2c);
+        };
+        if(gpDev->reg_vcm2i2c){
+            regulator_put(gpDev->reg_vcm2i2c);
+        };
+        if(gpDev->reg_vcm){
+            regulator_put(gpDev->reg_vcm);
+        };
+        if(gpDev->pwdn_gpio){
+            gpio_free(gpDev->pwdn_gpio);
+        }
+        if(gpDev->reset_gpio){
+            gpio_free(gpDev->reset_gpio);
+        }
+        if(gpDev->node)
+            of_node_put(gpDev->node);
+#endif
+
         device_destroy(gpDev->vcam_class, gpDev->vcam_dev);
     	class_destroy(gpDev->vcam_class);
         unregister_chrdev_region(gpDev->vcam_dev, 1);
     	platform_device_unregister(gpDev->pLinuxDevice);
        	kfree(gpDev);
 		gpDev = NULL;
+
     }
 }
 

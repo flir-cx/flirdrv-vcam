@@ -27,6 +27,7 @@
 
 // this structure keeps track of the device instance
 typedef struct __CAM_HW_INDEP_INFO {
+    struct device          *dev;
 	struct platform_device *pLinuxDevice;
     struct cdev 			vcam_cdev;			// Linux character device
     struct class			*vcam_class;
@@ -37,7 +38,15 @@ typedef struct __CAM_HW_INDEP_INFO {
     struct led_classdev     *torch_cdev;
 
     UCHAR					cameraI2CAddress[2];
+#ifdef CONFIG_OF
+	struct device_node *node;
+    int pwdn_gpio;
+    int reset_gpio;
 
+	struct regulator *reg_vcm1i2c;
+	struct regulator *reg_vcm2i2c;
+	struct regulator *reg_vcm;
+#endif
     // Function pointers
     DWORD (* pGetTorchState) (struct __CAM_HW_INDEP_INFO * pInfo, VCAMIOCTLFLASH * pFlashData);
     DWORD (* pSetTorchState) (struct __CAM_HW_INDEP_INFO * pInfo, VCAMIOCTLFLASH * pFlashData);
