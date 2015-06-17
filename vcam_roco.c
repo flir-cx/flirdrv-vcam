@@ -107,7 +107,7 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
         EnablePower(pInfo, TRUE);
 
 #endif
-    return (ret==0);
+    return TRUE;
 }
 
 
