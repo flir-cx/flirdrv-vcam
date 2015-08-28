@@ -84,10 +84,16 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
     // Find torch
     down_read(&leds_list_lock);
     list_for_each_entry(led_cdev, &leds_list, node) {
-	    if (strcmp(led_cdev->name, "torch") == 0){
+	    if (strcmp(led_cdev->name, "torch-rori-c") == 0){
+		    pr_err("*** Found led with name torch-rori-c\n");
+		    pInfo->torch_cdev = led_cdev;
+			break;
+	    }
+		if (strcmp(led_cdev->name, "torch") == 0){
 		    pr_err("*** Found led with name torch\n");
 		    pInfo->torch_cdev = led_cdev;
-	    } else {
+	    }
+		else {
 		  //  pr_err("Found led with name %s\n", led_cdev->name);
 	    }
     }
