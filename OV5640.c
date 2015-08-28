@@ -1823,6 +1823,7 @@ static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam,int fov)
         break;
 
     default:
+        pr_err("VCAM: Unsupported fov: %d\n", fov);
         ret = ERROR_NOT_SUPPORTED;
     }
 
