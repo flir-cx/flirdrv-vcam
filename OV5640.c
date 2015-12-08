@@ -140,7 +140,7 @@ static struct reg_value ov5640_init_setting_15fps_5MP[] =
     {0x4004,0x06 },
     {0x3000,0x20 }, //Leave MCU in reset
     {0x3002,0x1c },
-    {0x3004,0xff },
+    {0x3004,0xdf }, //Disable mcu clock
     {0x3006,0xc3 },
     {0x300e,0x45 },
     {0x302e,0x08 },
@@ -1769,20 +1769,26 @@ static BOOL DoI2CRead (PCAM_HW_INDEP_INFO pInfo, USHORT *result, USHORT reg, CAM
     return ret;
 }
 #endif
-
-
-void OV5640_stream_on(PCAM_HW_INDEP_INFO pInfo,CAM_NO camera)
+static struct reg_value stream_on[] =
 {
-    struct reg_value buff= {0x4202,0};
-    DoI2CWrite(pInfo,&buff,1,camera);
+    {0x4202,0x00}, //stream on
+    {0x3a00,0x7c}, //night mode on
+};
+static struct reg_value stream_off[] =
+{
+    {0x4202,0x0f},  //stream off
+    {0x3a00,0x78},  //night mode off
+};
+
+void OV5640_stream_on(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)
+{
+    DoI2CWrite(pInfo, stream_on, dim(stream_on), cam);
 }
 
-void OV5640_stream_off(PCAM_HW_INDEP_INFO pInfo,CAM_NO camera)
+void OV5640_stream_off(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)
 {
-    struct reg_value buff= {0x4202,0x0f};
-    DoI2CWrite(pInfo,&buff,1,camera);
+    DoI2CWrite(pInfo, stream_off, dim(stream_off), cam);
 }
-
 
 
 /*Turn vcam autofocus on*/
