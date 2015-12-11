@@ -1772,12 +1772,10 @@ static BOOL DoI2CRead (PCAM_HW_INDEP_INFO pInfo, USHORT *result, USHORT reg, CAM
 static struct reg_value stream_on[] =
 {
     {0x4202,0x00}, //stream on
-    {0x3a00,0x7c}, //night mode on
 };
 static struct reg_value stream_off[] =
 {
     {0x4202,0x0f},  //stream off
-    {0x3a00,0x78},  //night mode off
 };
 
 void OV5640_stream_on(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)
@@ -1788,6 +1786,18 @@ void OV5640_stream_on(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)
 void OV5640_stream_off(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)
 {
     DoI2CWrite(pInfo, stream_off, dim(stream_off), cam);
+}
+
+void OV5640_nightmode_off(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)
+{
+    struct reg_value night_mode_off =       {0x3a00,0x78}; //night mode off
+    DoI2CWrite(pInfo, &night_mode_off, 1, cam);
+}
+
+void OV5640_nightmode_on(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)
+{
+   struct reg_value night_mode_on=       {0x3a00,0x7c};  //night mode on
+    DoI2CWrite(pInfo, &night_mode_on, 1, cam);
 }
 
 
@@ -1803,6 +1813,20 @@ void OV5640_autofocus_off(PCAM_HW_INDEP_INFO pInfo,CAM_NO camera)
 {
     struct reg_value buff= {0x3022,0x00};
     DoI2CWrite(pInfo,&buff,1,camera);
+}
+
+
+static void nightmode_on_off_work(struct work_struct *work)
+{
+	CAM_HW_INDEP_INFO *pInfo =
+		container_of(work, CAM_HW_INDEP_INFO, nightmode_work);
+
+ // pr_err("VCAM turning nightmode off and on\n");
+    msleep (1000);
+    OV5640_nightmode_off(pInfo,pInfo->cam);
+    msleep (1000);
+    OV5640_nightmode_on(pInfo,pInfo->cam);
+
 }
 
 
@@ -1835,6 +1859,9 @@ static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam,int fov)
 
     OV5640_stream_on(pInfo,cam);
 
+    pInfo->cam = cam;
+    schedule_work(&pInfo->nightmode_work);
+
     return ret;
 }
 
@@ -1847,29 +1874,26 @@ static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
     if(ret)
         return ret;
 
-	//load auto-focus firmware
-	// ret = DoI2CWrite(pInfo, ov5640_af_reg, dim(ov5640_af_reg), cam);
-    // if(ret)
-    //     return ret;
-
     ret = OV5640_set_fov(pInfo,cam,54);
     if(ret)
         return ret;
-
-	// enable auto-focuse
-  //  OV5640_autofocus_on(pInfo,cam);
 
 	return ret;
 }
 
 BOOL OV5640_Init(PCAM_HW_INDEP_INFO pInfo)
-{
+{  
+    INIT_WORK(&pInfo->nightmode_work, nightmode_on_off_work);
+
     initCamera(pInfo, TRUE, CAM_ALL);
     /*if (bCamActive[CAM_1] == FALSE)
 		DoI2CWrite(pInfo, I2CDataStandByEnter[0], dim(I2CDataStandByEnter), 0, 0, 0, CAM_1);
 	if (bCamActive[CAM_2] == FALSE)
 		DoI2CWrite(pInfo, I2CDataStandByEnter[0], dim(I2CDataStandByEnter), 0, 0, 0, CAM_2);
     */
+
+
+
     return TRUE;
 }
 

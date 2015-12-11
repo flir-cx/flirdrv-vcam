@@ -52,6 +52,9 @@ typedef struct __CAM_HW_INDEP_INFO {
     DWORD (* pSetTorchState) (struct __CAM_HW_INDEP_INFO * pInfo, VCAMIOCTLFLASH * pFlashData);
     void  (* pEnablePower) (struct __CAM_HW_INDEP_INFO * pInfo, BOOL bEnable);
 
+    struct work_struct nightmode_work;
+    int cam;
+
 } CAM_HW_INDEP_INFO, *PCAM_HW_INDEP_INFO;
 
 // Hardware specific functions
