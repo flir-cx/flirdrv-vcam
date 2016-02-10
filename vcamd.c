@@ -21,6 +21,7 @@
 #include <linux/platform_device.h>
 #include <linux/i2c.h>
 #include <linux/version.h>
+#include <linux/uaccess.h>
 
 #ifdef CONFIG_OF
 #include <linux/of_gpio.h>
