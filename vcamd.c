@@ -114,7 +114,13 @@ static int __init VCAM_Init(void)
 	// initialize this device instance
     sema_init(&gpDev->semDevice, 1);
 
-    // Init hardware
+	    // Init hardware
+#ifdef CONFIG_OF
+	gpDev->node = of_find_compatible_node(NULL, NULL, "flir,vcam");
+	if(of_machine_is_compatible("fsl,imx6dl-evco"))
+		ret = EvcoInitHW(gpDev);
+	else
+#endif
     if (cpu_is_mx51())
         ret = PicoInitHW(gpDev);
     else if(cpu_is_imx6s())

@@ -16,6 +16,7 @@ vcam-objs += OV5640.o
 vcam-objs += vcam_pico.o
 vcam-objs += vcam_neco.o
 vcam-objs += vcam_roco.o
+vcam-objs += vcam_evco.o
 
 SRC := $(shell pwd)
 

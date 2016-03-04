@@ -61,6 +61,7 @@ typedef struct __CAM_HW_INDEP_INFO {
 DWORD			NecoInitHW(PCAM_HW_INDEP_INFO pInfo);
 DWORD			PicoInitHW(PCAM_HW_INDEP_INFO pInfo);
 DWORD			RocoInitHW(PCAM_HW_INDEP_INFO pInfo);
+DWORD			EvcoInitHW(PCAM_HW_INDEP_INFO pInfo);
 // Visual camera specific functions
 BOOL MT9P111_Init(PCAM_HW_INDEP_INFO pInfo);
 DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo,

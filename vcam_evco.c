@@ -23,19 +23,6 @@
 
 // Definitions
 
-#define IOPORT_I2C_ADDR     0x46
-
-
-#define VCM_PWR_EN          0
-#define VCM_1_I2C_EN        1
-//Laser switch on           2
-#define VCM_PWDN            3
-#define VCM_RESET           4
-//Laser Soft on             5
-//Optics 5V0                6
-#define VCM_2_I2C_EN        7
-
-
 // Local variables
 
 // Function prototypes
@@ -50,7 +37,7 @@ static int requestRegulator(PCAM_HW_INDEP_INFO pInfo,struct regulator ** reg, ch
 
 //-----------------------------------------------------------------------------
 //
-// Function: RocoInitHW
+// Function: EvcoInitHW
 //
 // This function will perform BSP specific initialization.
 //
@@ -61,30 +48,24 @@ static int requestRegulator(PCAM_HW_INDEP_INFO pInfo,struct regulator ** reg, ch
 //
 //-----------------------------------------------------------------------------
 
-DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
+DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 {
     BOOL ret = TRUE;
     extern struct list_head leds_list;
     extern struct rw_semaphore leds_list_lock;
     struct led_classdev *led_cdev;
 
-    pInfo->hI2C = i2c_get_adapter(1);
+    pInfo->hI2C = i2c_get_adapter(2);
     pInfo->eCamModel = OV5640;
     pInfo->pGetTorchState = GetTorchState;
     pInfo->pSetTorchState = SetTorchState;
     pInfo->pEnablePower = EnablePower;
-    pInfo->cameraI2CAddress[0] = 0x78;  //At power on vcam modules will share 0x78 i2c address
-    pInfo->cameraI2CAddress[1] = 0x7A;
+    pInfo->cameraI2CAddress[0] = 0x78;
 
  #ifdef CONFIG_OF
     // Find torch
     down_read(&leds_list_lock);
     list_for_each_entry(led_cdev, &leds_list, node) {
-	    if (strcmp(led_cdev->name, "torch-rori-c") == 0){
-		    pr_err("*** Found led with name torch-rori-c\n");
-		    pInfo->torch_cdev = led_cdev;
-			break;
-	    }
 		if (strcmp(led_cdev->name, "torch") == 0){
 		    pr_err("*** Found led with name torch\n");
 		    pInfo->torch_cdev = led_cdev;
@@ -97,17 +78,11 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 
     ret =requestGPIOpin(pInfo,&pInfo->reset_gpio,"vcam_reset-gpio",0);
     if(!ret)
-        ret = requestRegulator(pInfo,&pInfo->reg_vcm,"rori_vcm",0);
-    if(!ret)
-        ret = requestRegulator(pInfo,&pInfo->reg_vcm1i2c,"rori_vcm1_i2c_en",0);
-    if(!ret)
-        ret = requestRegulator(pInfo,&pInfo->reg_vcm2i2c,"rori_vcm2_i2c_en",0);
+        ret = requestRegulator(pInfo,&pInfo->reg_vcm,"VCM_DOVDD",0);
     if(!ret)
         ret = requestGPIOpin(pInfo,&pInfo->pwdn_gpio,"vcam_pwdn-gpio",1);
-
     if (!ret)
         EnablePower(pInfo, TRUE);
-
 #endif
     return TRUE;
 }
@@ -216,7 +191,7 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD WriteVcam(PCAM_HW_INDEP_INFO pInfo,u8 i2cAddress,u16 address,u8 data)
+static DWORD WriteVcam(PCAM_HW_INDEP_INFO pInfo,u8 i2cAddress,u16 address,u8 data)
 {
     struct i2c_msg msgs[1];
     UCHAR buf[3];
@@ -243,7 +218,7 @@ DWORD WriteVcam(PCAM_HW_INDEP_INFO pInfo,u8 i2cAddress,u16 address,u8 data)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
+static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 {
    int ret=0;
 #ifdef CONFIG_OF
@@ -254,18 +229,9 @@ void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
         gpio_direction_output(pInfo->pwdn_gpio, 0);
         msleep(1);
         gpio_direction_output(pInfo->reset_gpio, 1);
-        msleep(1);
-        ret=regulator_enable(pInfo->reg_vcm2i2c);
-        msleep(1); //Change vcam2 i2c address from 0x78 to 0x7a
-        WriteVcam(pInfo,pInfo->cameraI2CAddress[0],0x3100,pInfo->cameraI2CAddress[1]);
-        ret= regulator_enable(pInfo->reg_vcm1i2c);
     }
     else
     {
-        ret=regulator_disable(pInfo->reg_vcm1i2c);
-        msleep(1);
-        ret=regulator_disable(pInfo->reg_vcm2i2c);
-        msleep(1);
         gpio_direction_output(pInfo->reset_gpio, 0);
         msleep(1);
         gpio_direction_output(pInfo->pwdn_gpio, 1);
