@@ -13,6 +13,7 @@
 #include "faddev.h"
 #include <linux/i2c.h>
 #include <linux/leds.h>
+#include <linux/platform_device.h>
 
 #ifdef CONFIG_OF
 #include <linux/of_gpio.h>
@@ -113,7 +114,7 @@ int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int * ppin, char * of_name, int val
 int requestRegulator(PCAM_HW_INDEP_INFO pInfo,struct regulator ** reg, char * of_name,int enable)
 {
     int retval = -1;
-    *reg = regulator_get(pInfo->dev, of_name);
+    *reg = regulator_get(&pInfo->pLinuxDevice->dev, of_name);
 	if(IS_ERR(*reg))
 	{
 		pr_err("VCAM: Error on %s get\n",of_name);
@@ -180,6 +181,7 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 	return ERROR_SUCCESS;
 }
 
+#if 0
 //-----------------------------------------------------------------------------
 //
 // Function:  WriteVcam
@@ -206,6 +208,7 @@ static DWORD WriteVcam(PCAM_HW_INDEP_INFO pInfo,u8 i2cAddress,u16 address,u8 dat
 
     return i2c_transfer(pInfo->hI2C, msgs, 1);
 }
+#endif
 
 //-----------------------------------------------------------------------------
 //

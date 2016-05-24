@@ -299,6 +299,7 @@ static struct reg_value ov5640_init_setting_15fps_5MP[] =
     {0x3008,0x02 }
 };
 
+#if 0
 /* OV5640 af firmware register values */
 static struct reg_value ov5640_af_reg[] = {
 {0x3000, 0x20},{0x8000, 0x02},{0x8001, 0x0d},{0x8002, 0xf3},
@@ -1289,6 +1290,7 @@ static struct reg_value ov5640_af_reg[] = {
 {0x3028, 0x00},{0x3029, 0xFF},{0x3000, 0x00},{0x3004, 0xFF},
 {0, 0},
 };
+#endif
 
 /*
  *

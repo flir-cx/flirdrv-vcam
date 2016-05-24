@@ -6,7 +6,7 @@ ifneq ($(KERNEL_PATH),)
        KERNEL_SRC = $(KERNEL_PATH)
 endif
 
-EXTRA_CFLAGS = -I$(ALPHAREL)/SDK/FLIR/Include
+EXTRA_CFLAGS = -I$(ALPHAREL)/SDK/FLIR/Include -Werror
 
 obj-m := vcam.o
 vcam-objs += vcamd.o
