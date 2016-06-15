@@ -62,6 +62,7 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
     pInfo->pSetTorchState = SetTorchState;
     pInfo->pEnablePower = EnablePower;
     pInfo->cameraI2CAddress[0] = 0x78;
+    pInfo->flip_image= 0;
 
  #ifdef CONFIG_OF
     // Find torch

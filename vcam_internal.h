@@ -34,6 +34,7 @@ typedef struct __CAM_HW_INDEP_INFO {
 	struct led_classdev	*torch_cdev;
 
 	UCHAR			cameraI2CAddress[2];
+	int				flip_image;				//enable flip of image in camera sensor
 #ifdef CONFIG_OF
 	struct device_node 	*node;
 	int			pwdn_gpio;

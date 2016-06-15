@@ -94,8 +94,8 @@ static struct reg_value ov5640_init_setting_15fps_5MP[] =
     {0x3c09,0x1c },
     {0x3c0a,0x9c },
     {0x3c0b,0x40 },
-    {0x3820,0x40 },
-    {0x3821,0x06 },
+	{0x3820,0x40 }, //Sensor flip=0 and mirror=1
+	{0x3821,0x07 },
     {0x3814,0x11 },
     {0x3815,0x11 },
     {0x3800,0x00 },
@@ -297,6 +297,11 @@ static struct reg_value ov5640_init_setting_15fps_5MP[] =
     {0x3a11,0x60 },
     {0x3a1f,0x14 },
     {0x3008,0x02 }
+};
+
+static struct reg_value ov5640_flip_reg[] = {
+	{0x3820,0x43 }, //Sensor flip=1 and mirror=0
+	{0x3821,0x05 },
 };
 
 #if 0
@@ -1305,7 +1310,6 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV54[] = {
     {0x3008, 0x42},
     {0x3035, 0x21}, {0x3036, 0x5c}, {0x3c07, 0x07},
     {0x3c09, 0x1c}, {0x3c0a, 0x9c}, {0x3c0b, 0x40},
-    {0x3820, 0x43}, {0x3821, 0x05}, //Sensor flip=1 and mirror=0
     {0x3814, 0x31}, //Horizontal subsamble increment
     {0x3815, 0x31}, //Vertical   subsamble increment
     {0x3800, 0x00}, {0x3801, 0x00}, //X address start = 0x0
@@ -1343,7 +1347,6 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[] = {
     {0x3008, 0x42},
     {0x3035, 0x12}, {0x3036, 0x60}, {0x3c07, 0x07},
     {0x3c09, 0x1c}, {0x3c0a, 0x9c}, {0x3c0b, 0x40},
-    {0x3820, 0x43}, {0x3821, 0x05}, //Sensor flip=1 and mirror=0
     {0x3814, 0x11}, //Horizontal subsamble increment
     {0x3815, 0x11}, //Vertical   subsamble increment
     {0x3800, 0x01}, {0x3801, 0x8c}, //X address start = 0x18c
@@ -1382,7 +1385,6 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV28[] = {
     {0x3008, 0x42},
     {0x3035, 0x21}, {0x3036, 0x5c}, {0x3c07, 0x07},
     {0x3c09, 0x1c}, {0x3c0a, 0x9c}, {0x3c0b, 0x40},
-    {0x3820, 0x43}, {0x3821, 0x05}, //Sensor flip=1 and mirror=0
     {0x3814, 0x11}, //Horizontal subsamble increment
     {0x3815, 0x11}, //Vertical   subsamble increment
     {0x3800, 0x02}, {0x3801, 0x90}, //X address start = 0x290
@@ -1600,6 +1602,14 @@ static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
     ret = DoI2CWrite(pInfo, ov5640_init_setting_15fps_5MP, dim(ov5640_init_setting_15fps_5MP), cam);
     if(ret)
         return ret;
+
+
+	if(pInfo->flip_image)
+	{
+		ret = DoI2CWrite(pInfo, ov5640_flip_reg, dim(ov5640_flip_reg), cam);
+		if(ret)
+			return ret;
+	}
 
     ret = OV5640_set_fov(pInfo,cam,54);
     if(ret)
