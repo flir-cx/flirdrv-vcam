@@ -144,7 +144,7 @@ static struct reg_value ov5640_init_setting_15fps_5MP[] =
     {0x3006,0xc3 },
     {0x300e,0x45 },
     {0x302e,0x08 },
-    {0x4300,0x33 },
+    {0x4300,0x32 },
     {0x4837,0x0a },
     {0x501f,0x00 },
     {0x440e,0x00 },
@@ -302,6 +302,7 @@ static struct reg_value ov5640_init_setting_15fps_5MP[] =
 static struct reg_value ov5640_flip_reg[] = {
 	{0x3820,0x43 }, //Sensor flip=1 and mirror=0
 	{0x3821,0x05 },
+	{0x4300,0x33 }, //Change CbCr order
 };
 
 #if 0
