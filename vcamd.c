@@ -93,7 +93,7 @@ static int vcam_probe(struct platform_device *pdev)
 	else if(cpu_is_imx6q())
 		ret = RocoInitHW(gpDev);
 	else
-		{pr_err("VCAM: Error: Unkown Hardware\n"); ret = 0;}
+		{pr_err("VCAM: Error: Unknown Hardware\n"); ret = 0;}
 
 	if (TRUE != ret)
 		pr_err ("VCAM_Init - failed to init hardware!\n");
@@ -115,13 +115,13 @@ static int vcam_remove(struct platform_device *pdev)
 #ifdef CONFIG_OF
 		if(gpDev->reg_vcm1i2c){
 			regulator_put(gpDev->reg_vcm1i2c);
-		};
+		}
 		if(gpDev->reg_vcm2i2c){
 			regulator_put(gpDev->reg_vcm2i2c);
-		};
+		}
 		if(gpDev->reg_vcm){
 			regulator_put(gpDev->reg_vcm);
-		};
+		}
 		if(gpDev->pwdn_gpio){
 			gpio_free(gpDev->pwdn_gpio);
 		}
