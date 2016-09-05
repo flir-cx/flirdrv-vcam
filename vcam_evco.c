@@ -30,6 +30,7 @@
 static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
+static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend);
 
 #ifdef CONFIG_OF
 static int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int * ppin, char * of_name, int value );
@@ -61,6 +62,7 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
     pInfo->pGetTorchState = GetTorchState;
     pInfo->pSetTorchState = SetTorchState;
     pInfo->pEnablePower = EnablePower;
+    pInfo->pSuspend = Suspend;
     pInfo->cameraI2CAddress[0] = 0x78;
     pInfo->flip_image= 0;
 
@@ -241,6 +243,31 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
         gpio_direction_output(pInfo->pwdn_gpio, 1);
         msleep(1);
         ret=regulator_disable(pInfo->reg_vcm);
+    }
+#endif
+}
+
+//-----------------------------------------------------------------------------
+//
+// Function: Suspend
+//
+// This function will handle suspend and resume
+//
+// Parameters:
+//
+// Returns:
+//
+//-----------------------------------------------------------------------------
+static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
+{
+#ifdef CONFIG_OF
+    if (bSuspend) {
+        OV5640_MipiSuspend(pInfo, bSuspend);
+        gpio_direction_output(pInfo->pwdn_gpio, 1);
+    } else {
+        gpio_direction_output(pInfo->pwdn_gpio, 0);
+        msleep(20);
+        OV5640_MipiSuspend(pInfo, bSuspend);
     }
 #endif
 }

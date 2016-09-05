@@ -48,6 +48,7 @@ typedef struct __CAM_HW_INDEP_INFO {
 	DWORD (* pGetTorchState) (struct __CAM_HW_INDEP_INFO * pInfo, VCAMIOCTLFLASH * pFlashData);
 	DWORD (* pSetTorchState) (struct __CAM_HW_INDEP_INFO * pInfo, VCAMIOCTLFLASH * pFlashData);
 	void  (* pEnablePower) (struct __CAM_HW_INDEP_INFO * pInfo, BOOL bEnable);
+	void  (* pSuspend) (struct __CAM_HW_INDEP_INFO * pInfo, BOOL bSuspend);
 
 	struct work_struct nightmode_work;
 	int cam;
@@ -76,6 +77,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			DWORD  Ioctl,
 			PUCHAR pBuf,
 			PUCHAR pUserBuf);
+void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend);
 
 
 #endif //_VCAM_INTERNAL_H_

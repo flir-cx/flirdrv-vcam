@@ -23,6 +23,7 @@
 static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
+static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 
 //-----------------------------------------------------------------------------
 //
@@ -49,6 +50,7 @@ DWORD NecoInitHW(PCAM_HW_INDEP_INFO pInfo)
     pInfo->pGetTorchState = GetTorchState;
     pInfo->pSetTorchState = SetTorchState;
     pInfo->pEnablePower = EnablePower;
+    pInfo->pSuspend = Suspend;
 
     pInfo->cameraI2CAddress[0] = 0x42;
     pInfo->cameraI2CAddress[1] = 0;
@@ -126,4 +128,19 @@ void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
     else
     {
     }
+}
+
+//-----------------------------------------------------------------------------
+//
+// Function: Suspend
+//
+// This function will handle suspend and resume
+//
+// Parameters:
+//
+// Returns:
+//
+//-----------------------------------------------------------------------------
+static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
+{
 }

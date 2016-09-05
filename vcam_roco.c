@@ -43,6 +43,7 @@
 static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
+static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 
 #ifdef CONFIG_OF
 static int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int * ppin, char * of_name, int value );
@@ -74,6 +75,7 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
     pInfo->pGetTorchState = GetTorchState;
     pInfo->pSetTorchState = SetTorchState;
     pInfo->pEnablePower = EnablePower;
+    pInfo->pSuspend = Suspend;
     pInfo->cameraI2CAddress[0] = 0x78;  //At power on vcam modules will share 0x78 i2c address
     pInfo->cameraI2CAddress[1] = 0x7A;
     pInfo->flip_image = 1;
@@ -275,4 +277,19 @@ void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
         ret=regulator_disable(pInfo->reg_vcm);
     }
 #endif
+}
+
+//-----------------------------------------------------------------------------
+//
+// Function: Suspend
+//
+// This function will handle suspend and resume
+//
+// Parameters:
+//
+// Returns:
+//
+//-----------------------------------------------------------------------------
+static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
+{
 }

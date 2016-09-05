@@ -142,7 +142,7 @@ static struct reg_value ov5640_init_setting_15fps_5MP[] =
     {0x3002,0x1c },
     {0x3004,0xdf }, //Disable mcu clock
     {0x3006,0xc3 },
-    {0x300e,0x45 },
+    {0x300e,0x45 }, /* MIPI enabled */
     {0x302e,0x08 },
     {0x4300,0x32 },
     {0x4837,0x0a },
@@ -1303,7 +1303,7 @@ static struct reg_value ov5640_af_reg[] = {
  *
  * settings based on ov5640_setting_30fps_720P_1280_720
  *
- * mode timings from http://confluence-se/display/IN/vcam+modes
+ * mode timings from https://confluence-se.flir.net/display/IN/vcam+modes
  *
  * vcam fov=55 used with IR lens fov=45
 */
@@ -1340,7 +1340,7 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV54[] = {
  *
  * settings based on ov5640_setting_30fps_720P_1280_720
  *
- * mode timings from http://confluence-se/display/IN/vcam+modes
+ * mode timings from https://confluence-se.flir.net/display/IN/vcam+modes
  *
  * vcam fov=39 used with IR lens fov=28
 */
@@ -1377,7 +1377,7 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[] = {
  *
  * settings based on ov5640_setting_30fps_720P_1280_720
  *
- * mode timings from http://confluence-se/display/IN/vcam+modes
+ * mode timings from https://confluence-se.flir.net/display/IN/vcam+modes
  *
  * vcam fov=28 used with IR lens fov=12
  *
@@ -1516,6 +1516,17 @@ void OV5640_stream_on(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)
 void OV5640_stream_off(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)
 {
     DoI2CWrite(pInfo, stream_off, dim(stream_off), cam);
+}
+
+void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
+{
+    struct reg_value mipi_pwdn = {0x300e, 0x45};
+
+    if (bSuspend) {
+        /* Set register 0x300E[4:3] to 2'b11 before the PWDN pin is set high */
+        mipi_pwdn.u8Val |= 00011000;
+    }
+    DoI2CWrite(pInfo, &mipi_pwdn, 1, g_camera);
 }
 
 void OV5640_nightmode_off(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)

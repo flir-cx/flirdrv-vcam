@@ -137,15 +137,15 @@ static int vcam_remove(struct platform_device *pdev)
 
 static int vcam_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	if (gpDev->pEnablePower)
-		gpDev->pEnablePower(gpDev, FALSE);
+	if (gpDev->pSuspend)
+		gpDev->pSuspend(gpDev, TRUE);
 	return 0;
 }
 
 static int vcam_resume(struct platform_device *pdev)
 {
-	if (gpDev->pEnablePower)
-		gpDev->pEnablePower(gpDev, TRUE);
+	if (gpDev->pSuspend)
+		gpDev->pSuspend(gpDev, FALSE);
 	return 0;
 }
 
