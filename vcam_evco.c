@@ -71,7 +71,7 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
     down_read(&leds_list_lock);
     list_for_each_entry(led_cdev, &leds_list, node) {
 		if (strcmp(led_cdev->name, "torch") == 0){
-		    pr_err("*** Found led with name torch\n");
+		    pr_info("*** Found led with name torch\n");
 		    pInfo->torch_cdev = led_cdev;
 	    }
 		else {
