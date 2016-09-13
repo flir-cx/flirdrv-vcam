@@ -33,7 +33,7 @@ typedef enum {CAM_1, CAM_2, CAM_ALL} CAM_NO;
 // Local variables
 static BOOL bCamActive[CAM_ALL] = { TRUE, FALSE };
 
-static int vcamFOV;
+static int vcamFOV = -1;
 static CAM_NO g_camera = CAM_ALL;
 struct reg_value {
     u16 u16RegAddr;
@@ -1573,7 +1573,10 @@ static void nightmode_on_off_work(struct work_struct *work)
 
 static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam,int fov)
 {
-    int ret;
+    int ret = 0;
+    if(vcamFOV == fov)
+        return ret;
+
     OV5640_stream_off(pInfo,cam);
 
     switch(fov)
