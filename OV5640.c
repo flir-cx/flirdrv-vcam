@@ -1524,7 +1524,7 @@ void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
 
     if (bSuspend) {
         /* Set register 0x300E[4:3] to 2'b11 before the PWDN pin is set high */
-        mipi_pwdn.u8Val |= 00011000;
+        mipi_pwdn.u8Val |= 0x18;
     }
     DoI2CWrite(pInfo, &mipi_pwdn, 1, g_camera);
 }
