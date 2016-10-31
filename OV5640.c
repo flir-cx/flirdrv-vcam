@@ -33,7 +33,7 @@ typedef enum {CAM_1, CAM_2, CAM_ALL} CAM_NO;
 // Local variables
 static BOOL bCamActive[CAM_ALL] = { TRUE, FALSE };
 
-static int vcamFOV;
+static int g_vcamFOV;
 static CAM_NO g_camera = CAM_ALL;
 struct reg_value {
     u16 u16RegAddr;
@@ -43,7 +43,7 @@ struct reg_value {
 /*Settings from
 /Rocky/Elektronik/Komponenter/datablad/VCam/Settings/
 */
-static struct reg_value ov5640_init_setting_15fps_5MP[] =
+static struct reg_value ov5640_init_setting_9fps_5MP[] =
 {
     {0x3103,0x11 },
     {0x3008,0x82 },
@@ -53,7 +53,7 @@ static struct reg_value ov5640_init_setting_15fps_5MP[] =
     {0x3018,0x00 },
     {0x3034,0x18 },
     {0x3035,0x11 },
-    {0x3036,0x54 },
+    {0x3036,0x34 },
     {0x3037,0x13 },
     {0x3108,0x01 },
     {0x3630,0x36 },
@@ -1408,6 +1408,8 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV28[] = {
     {0x3824, 0x04}, {0x5001, 0x83}, {0x4005, 0x1a},
     {0x3008, 0x02}, {0x3503, 0},
 };
+
+
 static BOOL DoI2CWrite (PCAM_HW_INDEP_INFO pInfo,
                         struct reg_value  *pMode,
 						USHORT elements,
@@ -1463,42 +1465,43 @@ static BOOL DoI2CWrite (PCAM_HW_INDEP_INFO pInfo,
     return ERROR_SUCCESS;
 }
 #if 0
-static BOOL DoI2CRead (PCAM_HW_INDEP_INFO pInfo, USHORT *result, USHORT reg, CAM_NO camera)
+static BOOL DoI2CRead (PCAM_HW_INDEP_INFO pInfo, u8 *result, u16 reg, CAM_NO camera)
 {
 	struct i2c_msg msgs[2];
-    DWORD ret = 0;
-    UCHAR cmd[2];
-    UCHAR stat[2];
+	DWORD ret = 0;
+	UCHAR cmd[2];
+	UCHAR stat[2];
 
-    // Check if camera in use
-    msgs[0].addr = BSPGetCameraI2CAddress(camera) >> 1;
-    if (msgs[0].addr == 0)
-        return TRUE;
-    msgs[1].addr = msgs[0].addr;
+	// Check if camera in use
+	msgs[0].addr = pInfo->cameraI2CAddress[camera] >> 1;
+	if (msgs[0].addr == 0)
+		return TRUE;
+	msgs[1].addr = msgs[0].addr;
 
-    msgs[0].flags = 0;
-    msgs[0].len = 2;
-    msgs[0].buf = cmd;
-    msgs[1].flags = I2C_M_RD | I2C_M_NOSTART;
-    msgs[1].len = 2;
-    msgs[1].buf = stat;
+	msgs[0].flags = 0;
+	msgs[0].len = 2;
+	msgs[0].buf = cmd;
+	msgs[1].flags = I2C_M_RD | I2C_M_NOSTART;
+	msgs[1].len = 1;
+	msgs[1].buf = stat;
 
-    cmd[0] = (UCHAR)(reg >> 8);
-    cmd[1] = (UCHAR)(reg & 0xFF);
+	cmd[0] = (UCHAR)(reg >> 8);
+	cmd[1] = (UCHAR)(reg & 0xFF);
 
-    ret = i2c_transfer(pInfo->hI2C, msgs, 2);
+	ret = i2c_transfer(pInfo->hI2C, msgs, 2);
 
-    if (ret > 0)
-    {
-        *result = (stat[0] << 8) | stat[1];
-    }
-    else
-    {
-        pr_err("DoI2CRead failing reading reg %d\n", reg);
-    }
-    return ret;
+	if (ret > 0)
+	{
+		*result = stat[0];
+	}
+	else
+	{
+		pr_err("DoI2CRead failing reading reg %d\n", reg);
+	}
+	return ret;
 }
 #endif
+
 static struct reg_value stream_on[] =
 {
     {0x4202,0x00}, //stream on
@@ -1570,6 +1573,24 @@ static void nightmode_on_off_work(struct work_struct *work)
 
 }
 
+static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)
+{
+	int ret;
+
+	OV5640_stream_off(pInfo,cam);
+	ret = DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP, dim(ov5640_init_setting_9fps_5MP), cam);
+	if(ret)
+		return ret;
+
+	if(pInfo->flip_image)
+	{
+		ret = DoI2CWrite(pInfo, ov5640_flip_reg, dim(ov5640_flip_reg), cam);
+		if(ret)
+			return ret;
+	}
+	OV5640_stream_on(pInfo,cam);
+	return ret;
+}
 
 static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam,int fov)
 {
@@ -1580,17 +1601,17 @@ static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam,int fov)
     {
     case 54:
         ret = DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54, dim(ov5640_setting_30fps_1280_960_HFOV54), cam);
-        vcamFOV =fov;
+        g_vcamFOV =fov;
         break;
 
     case 39:
         ret = DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV39, dim(ov5640_setting_30fps_1280_960_HFOV39), cam);
-        vcamFOV =fov;
+        g_vcamFOV =fov;
         break;
 
     case 28:
         ret = DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV28, dim(ov5640_setting_30fps_1280_960_HFOV28), cam);
-        vcamFOV =fov;
+        g_vcamFOV =fov;
         break;
 
     default:
@@ -1602,7 +1623,6 @@ static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam,int fov)
 
     pInfo->cam = cam;
     schedule_work(&pInfo->nightmode_work);
-
     return ret;
 }
 
@@ -1611,7 +1631,7 @@ static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
 {
     BOOL ret = ERROR_SUCCESS;
 
-    ret = DoI2CWrite(pInfo, ov5640_init_setting_15fps_5MP, dim(ov5640_init_setting_15fps_5MP), cam);
+    ret = DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP, dim(ov5640_init_setting_9fps_5MP), cam);
     if(ret)
         return ret;
 
@@ -1729,15 +1749,32 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
             }
             break;
 
-        case IOCTL_CAM_GRAB_STILL:
+        case IOCTL_CAM_SET_CAMMODE:
             {
-              //  CAM_NO cam = (bCamActive[CAM_1] == TRUE) ? CAM_1 : CAM_2;
+				VCAMIOCTLCAMMODE * pMode = (VCAMIOCTLCAMMODE *) pBuf;
 
     			LOCK(pInfo);
-                // Tell camera to switch to context B
-                //DoI2CWrite(pInfo, I2CDataGrab[0], dim(I2CDataGrab), 0, 0, 0, cam);
+				switch (pMode->eCamMode)
+				{
+				case VCAM_STILL:
+					//set camera to 5MP full size mode
+					dwErr = OV5640_set_5MP(pInfo,g_camera);
+					msleep (500);
+					break;
 
-                dwErr = ERROR_SUCCESS;
+				case VCAM_DRAFT:
+					//restore last known fov
+					dwErr = OV5640_set_fov(pInfo,g_camera,g_vcamFOV);
+					//must wait for auto exposure control (AEC) and auto gain control (AGC) to adjust image brightness
+					msleep (500);
+					break;
+
+				case VCAM_UNDEFINED:
+				case VCAM_RESET:
+				default:
+					pr_err("VCAM Unsupported IOCTL_CAM_SET_CAMMODE %d\n", pMode->eCamMode);
+					break;
+				}
     			UNLOCK(pInfo);
             }
             break;
@@ -1755,7 +1792,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
         case IOCTL_CAM_GET_FOV:
             {
                 LOCK(pInfo);
-                ((VCAMIOCTLFOV *)pBuf)->fov = vcamFOV;
+                ((VCAMIOCTLFOV *)pBuf)->fov = g_vcamFOV;
                 dwErr = ERROR_SUCCESS;
                 UNLOCK(pInfo);
             }

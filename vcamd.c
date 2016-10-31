@@ -240,7 +240,7 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_SET_FLASH:
 	case IOCTL_CAM_SET_FOV:
 	case IOCTL_CAM_GET_FOV:
-
+	case IOCTL_CAM_SET_CAMMODE:
 	case IOCTL_CAM_INIT:
 	case IOCTL_CAM_GRAB_STILL:
 		switch (pInfo->eCamModel)
