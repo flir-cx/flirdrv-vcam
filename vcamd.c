@@ -82,7 +82,7 @@ static int vcam_probe(struct platform_device *pdev)
 		// Init hardware
 #ifdef CONFIG_OF
 	gpDev->node = of_find_compatible_node(NULL, NULL, "flir,vcam");
-	if(of_machine_is_compatible("fsl,imx6dl-evco"))
+	if(of_machine_is_compatible("fsl,imx6dl-ec101"))
 		ret = EvcoInitHW(gpDev);
 	else
 #endif
