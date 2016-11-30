@@ -79,6 +79,7 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
     pInfo->cameraI2CAddress[0] = 0x78;  //At power on vcam modules will share 0x78 i2c address
     pInfo->cameraI2CAddress[1] = 0x7A;
     pInfo->flip_image = 1;
+    pInfo->edge_enhancement = 0; //Rocky mipi to parallell IC will introduce artifacts if enabled
 
  #ifdef CONFIG_OF
     // Find torch

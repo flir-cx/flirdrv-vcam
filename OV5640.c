@@ -194,7 +194,7 @@ static struct reg_value ov5640_init_setting_9fps_5MP[] =
     {0x538b,0x98 }, // [START] Sigma roll back to default CCM, to be finished (161121)
     {0x5300,0x08 },
     {0x5301,0x30 },
-	{0x5302,0x24 }, // Sigma increase edge enhancement from 10 to 24 (161025)
+	{0x5302,0x10 },
     {0x5303,0x00 },
     {0x5304,0x08 },
     {0x5305,0x30 },
@@ -303,6 +303,11 @@ static struct reg_value ov5640_flip_reg[] = {
 	{0x3820,0x46 }, //Sensor flip=1 and mirror=0
 	{0x3821,0x01 },
 	{0x4300,0x32 }, //Change CbCr order
+};
+
+
+static struct reg_value ov5640_edge_enhancement[] = {
+	{0x5302,0x24 }, // Sigma increase edge enhancement from 10 to 24 (161025)
 };
 
 #if 0
@@ -1582,6 +1587,14 @@ static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam)
 	if(ret)
 		return ret;
 
+	if(pInfo->edge_enhancement)
+	{
+		ret = DoI2CWrite(pInfo, ov5640_edge_enhancement, dim(ov5640_edge_enhancement), cam);
+		if(ret)
+			return ret;
+	}
+
+
 	if(pInfo->flip_image)
 	{
 		ret = DoI2CWrite(pInfo, ov5640_flip_reg, dim(ov5640_flip_reg), cam);
@@ -1639,6 +1652,14 @@ static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
 	if(pInfo->flip_image)
 	{
 		ret = DoI2CWrite(pInfo, ov5640_flip_reg, dim(ov5640_flip_reg), cam);
+		if(ret)
+			return ret;
+	}
+
+
+	if(pInfo->edge_enhancement)
+	{
+		ret = DoI2CWrite(pInfo, ov5640_edge_enhancement, dim(ov5640_edge_enhancement), cam);
 		if(ret)
 			return ret;
 	}
