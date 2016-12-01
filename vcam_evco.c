@@ -85,6 +85,8 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
         ret = requestRegulator(pInfo,&pInfo->reg_vcm,"VCM_DOVDD",0);
     if(!ret)
         ret = requestGPIOpin(pInfo,&pInfo->pwdn_gpio,"vcam_pwdn-gpio",1);
+    if(!ret)
+        ret = requestGPIOpin(pInfo,&pInfo->clk_en_gpio,"vcam_clk_en-gpio",1);
     if (!ret)
         EnablePower(pInfo, TRUE);
 #endif
@@ -232,6 +234,7 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
     {
         ret=regulator_enable(pInfo->reg_vcm);
         msleep(20);
+        gpio_direction_output(pInfo->clk_en_gpio, 0);
         gpio_direction_output(pInfo->pwdn_gpio, 0);
         msleep(1);
         gpio_direction_output(pInfo->reset_gpio, 1);
@@ -241,6 +244,7 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
         gpio_direction_output(pInfo->reset_gpio, 0);
         msleep(1);
         gpio_direction_output(pInfo->pwdn_gpio, 1);
+        gpio_direction_output(pInfo->clk_en_gpio, 1);
         msleep(1);
         ret=regulator_disable(pInfo->reg_vcm);
     }
@@ -264,7 +268,9 @@ static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
     if (bSuspend) {
         OV5640_MipiSuspend(pInfo, bSuspend);
         gpio_direction_output(pInfo->pwdn_gpio, 1);
+        gpio_direction_output(pInfo->clk_en_gpio, 1);
     } else {
+        gpio_direction_output(pInfo->clk_en_gpio, 0);
         gpio_direction_output(pInfo->pwdn_gpio, 0);
         msleep(20);
         OV5640_MipiSuspend(pInfo, bSuspend);
