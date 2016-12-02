@@ -39,6 +39,7 @@ typedef struct __CAM_HW_INDEP_INFO {
 	struct device_node 	*node;
 	int			pwdn_gpio;
 	int			reset_gpio;
+	int			clk_en_gpio;
 
 	struct regulator	*reg_vcm1i2c;
 	struct regulator	*reg_vcm2i2c;
