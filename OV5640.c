@@ -1624,6 +1624,24 @@ void OV5640_autofocus_off(PCAM_HW_INDEP_INFO pInfo,CAM_NO camera)
     DoI2CWrite(pInfo,&buff,1,camera);
 }
 
+/*Set vcam exposure value*/
+static void OV5640_set_exposure(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int exp)
+{
+    struct reg_value temp;
+    temp.u16RegAddr = 0x3500;
+    temp.u8Val = ((exp >> 16) & 0x0f);
+    DoI2CWrite(pInfo,&temp,1,camera);
+
+    temp.u16RegAddr = 0x3501;
+    temp.u8Val = ((exp >> 8)  & 0xff);
+    DoI2CWrite(pInfo,&temp,1,camera);
+
+    temp.u16RegAddr = 0x3502;
+    temp.u8Val = (exp & 0xf0);
+    DoI2CWrite(pInfo,&temp,1,camera);
+
+}
+
 
 static void nightmode_on_off_work(struct work_struct *work)
 {
@@ -1821,11 +1839,11 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 				VCAMIOCTLFLASH * pFlashData = (VCAMIOCTLFLASH *) pBuf;
 			    LOCK(pInfo);
 
-				if (pFlashData->bFlashOn)
-				{
-				}
-
 				dwErr = pInfo->pSetTorchState(pInfo, pFlashData);
+				//set fast exposure to compensate for led brightness
+				if(pFlashData->bTorchOn)
+					OV5640_set_exposure(pInfo, g_camera, 0x2000);
+
 			    UNLOCK(pInfo);
             }
             break;
