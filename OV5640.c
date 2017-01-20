@@ -1858,7 +1858,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 				case VCAM_STILL:
 					//set camera to 5MP full size mode
 					dwErr = OV5640_set_5MP(pInfo,g_camera);
-					msleep (500);
+					msleep (800);
 					break;
 
 				case VCAM_DRAFT:

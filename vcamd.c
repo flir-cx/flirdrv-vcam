@@ -128,6 +128,9 @@ static int vcam_remove(struct platform_device *pdev)
 		if(gpDev->reset_gpio){
 			gpio_free(gpDev->reset_gpio);
 		}
+		if(gpDev->clk_en_gpio){
+			gpio_free(gpDev->clk_en_gpio);
+		}
 		if(gpDev->node)
 			of_node_put(gpDev->node);
 #endif
