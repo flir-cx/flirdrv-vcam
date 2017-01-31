@@ -266,15 +266,15 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
 {
 #ifdef CONFIG_OF
-    if (bSuspend) {
-        OV5640_MipiSuspend(pInfo, bSuspend);
-        gpio_direction_output(pInfo->pwdn_gpio, 1);
-        gpio_direction_output(pInfo->clk_en_gpio, 1);
-    } else {
-        gpio_direction_output(pInfo->clk_en_gpio, 0);
-        gpio_direction_output(pInfo->pwdn_gpio, 0);
-        msleep(20);
-        OV5640_MipiSuspend(pInfo, bSuspend);
+    if(bSuspend)
+    {
+        EnablePower(pInfo,false);
     }
+    else
+    {
+        EnablePower(pInfo,true);
+        OV5640_reinit(pInfo);
+    }
+
 #endif
 }
