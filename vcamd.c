@@ -295,6 +295,22 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 		}
 		break;
 
+	case IOCTL_CAM_SUSPEND:
+		{
+		if (gpDev->pSuspend)
+			gpDev->pSuspend(gpDev, TRUE);
+		}
+		dwErr = ERROR_SUCCESS;
+		break;
+
+	case IOCTL_CAM_RESUME:
+		{
+		if (gpDev->pSuspend)
+			gpDev->pSuspend(gpDev, FALSE);
+		}
+		dwErr = ERROR_SUCCESS;
+		break;
+
 	default:
 		pr_err("FAD: Unsupported IOCTL code %lX\n", Ioctl);
 		dwErr = ERROR_NOT_SUPPORTED;

@@ -32,6 +32,7 @@ typedef enum {CAM_1, CAM_2, CAM_ALL} CAM_NO;
 
 // Local variables
 static BOOL bCamActive[CAM_ALL] = { TRUE, FALSE };
+static BOOL init;
 
 static int g_vcamFOV;
 static CAM_NO g_camera = CAM_ALL;
@@ -1717,7 +1718,6 @@ static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo,CAM_NO cam,int fov)
     return ret;
 }
 
-
 static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
 {
     BOOL ret = ERROR_SUCCESS;
@@ -1749,6 +1749,19 @@ static BOOL initCamera (PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
 	return ret;
 }
 
+
+BOOL OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
+{
+    if(!init)
+        return FALSE;
+
+    OV5640_set_5MP(pInfo,g_camera);
+
+    OV5640_set_fov(pInfo,g_camera,g_vcamFOV);
+
+    return TRUE;
+}
+
 BOOL OV5640_Init(PCAM_HW_INDEP_INFO pInfo)
 {  
     INIT_WORK(&pInfo->nightmode_work, nightmode_on_off_work);
@@ -1756,7 +1769,7 @@ BOOL OV5640_Init(PCAM_HW_INDEP_INFO pInfo)
 	if(pInfo->cameraI2CAddress[1]==0) //Only 1 active camera
 		g_camera = CAM_1;
     initCamera(pInfo, TRUE, g_camera);
-
+    init = 1;
     return TRUE;
 }
 
