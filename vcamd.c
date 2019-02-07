@@ -146,6 +146,13 @@ static int vcam_suspend(struct platform_device *pdev, pm_message_t state)
 	return 0;
 }
 
+static int vcam_shutdown(struct platform_device *pdev, pm_message_t state)
+{
+	if (gpDev->pSuspend)
+		gpDev->pSuspend(gpDev, TRUE);
+	return 0;
+}
+
 static int vcam_resume(struct platform_device *pdev)
 {
 	if (gpDev->pSuspend)
@@ -157,6 +164,7 @@ static struct platform_driver vcam_driver = {
 	.probe      = vcam_probe,
 	.remove     = vcam_remove,
 	.suspend    = vcam_suspend,
+	.shutdown    = vcam_shutdown,
 	.resume     = vcam_resume,
 	.driver     = {
 		.name   = "vcam",
