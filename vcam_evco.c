@@ -81,6 +81,9 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
     }
     up_read(&leds_list_lock);
 
+    if (of_find_property(pInfo->node, "flip-image", NULL))
+        pInfo->flip_image = 1;
+
     ret =requestGPIOpin(pInfo,&pInfo->reset_gpio,"vcam_reset-gpio",0);
     if(!ret)
         ret = requestRegulator(pInfo,&pInfo->reg_vcm,"VCM_DOVDD",0);
