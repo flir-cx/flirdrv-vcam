@@ -65,6 +65,7 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 	pInfo->pEnablePower = EnablePower;
 	pInfo->pSuspend = Suspend;
 	pInfo->cameraI2CAddress[0] = 0x78;
+	pInfo->mirror_image = 0;
 	pInfo->flip_image = 0;
 	pInfo->edge_enhancement = 1;
 
@@ -86,6 +87,7 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 				   "vcam_clk_en-gpio", 1);
 	if (!ret)
 		EnablePower(pInfo, TRUE);
+
 #endif
 	return TRUE;
 }

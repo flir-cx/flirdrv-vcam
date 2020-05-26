@@ -35,6 +35,7 @@ typedef struct __CAM_HW_INDEP_INFO {
 	struct led_classdev *torch_cdev;
 
 	UCHAR cameraI2CAddress[2];
+	int mirror_image; //enable mirror of image in camera sensor
 	int flip_image;		//enable flip of image in camera sensor
 	int edge_enhancement;	//enable increased edge enhancement in camera sensor
 #ifdef CONFIG_OF

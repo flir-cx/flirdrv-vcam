@@ -82,6 +82,7 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 						// share 0x78 i2c address
 	pInfo->cameraI2CAddress[1] = 0x7A;
 	pInfo->flip_image = 1;
+	pInfo->mirror_image = 0;
 	pInfo->edge_enhancement = 0;	// Rocky mipi to parallell IC will
 					// introduce artifacts if enabled
 
