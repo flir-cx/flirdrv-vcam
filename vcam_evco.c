@@ -53,9 +53,6 @@ static int requestRegulator(PCAM_HW_INDEP_INFO pInfo,struct regulator ** reg, ch
 DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 {
     BOOL ret = TRUE;
-    extern struct list_head leds_list;
-    extern struct rw_semaphore leds_list_lock;
-    struct led_classdev *led_cdev;
 
     pInfo->hI2C = i2c_get_adapter(2);
     pInfo->eCamModel = OV5640;
@@ -68,18 +65,6 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
     pInfo->edge_enhancement = 1;
 
  #ifdef CONFIG_OF
-    // Find torch
-    down_read(&leds_list_lock);
-    list_for_each_entry(led_cdev, &leds_list, node) {
-		if (strcmp(led_cdev->name, "torch") == 0){
-		    pr_info("*** Found led with name torch\n");
-		    pInfo->torch_cdev = led_cdev;
-	    }
-		else {
-		  //  pr_err("Found led with name %s\n", led_cdev->name);
-	    }
-    }
-    up_read(&leds_list_lock);
 
     if (of_find_property(pInfo->node, "flip-image", NULL))
         pInfo->flip_image = 1;
@@ -148,6 +133,35 @@ int requestRegulator(PCAM_HW_INDEP_INFO pInfo,struct regulator ** reg, char * of
 
 //-----------------------------------------------------------------------------
 //
+// Function:  FindTorch
+//
+// This function will return LED named "torch" from the kernel list of LEDS
+//
+// Parameters: None
+//
+// Returns: struct *led_cdev NULL if not found
+//
+//-----------------------------------------------------------------------------
+struct led_classdev *FindTorch(void)
+{
+	extern struct list_head leds_list;
+	extern struct rw_semaphore leds_list_lock;
+	/* Find torch */
+	struct led_classdev *led_cdev, *led=NULL;
+	down_read(&leds_list_lock);
+	list_for_each_entry(led_cdev, &leds_list, node) {
+		if (strcmp(led_cdev->name, "torch") == 0){
+			led=led_cdev;
+			break;
+		}
+	}
+	up_read(&leds_list_lock);
+	
+	return led;
+}
+
+//-----------------------------------------------------------------------------
+//
 // Function:  GetTorchState
 //
 // This function will return torch and flash state.
@@ -159,13 +173,21 @@ int requestRegulator(PCAM_HW_INDEP_INFO pInfo,struct regulator ** reg, char * of
 //-----------------------------------------------------------------------------
 DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
-    if (pInfo->torch_cdev)
-        pFlashData->bTorchOn = (pInfo->torch_cdev->brightness) ? TRUE : FALSE;
-    else
-        pFlashData->bTorchOn = FALSE;
-
-    pFlashData->bFlashOn = FALSE;
-    return ERROR_SUCCESS;
+	int ret;
+	struct led_classdev *led = FindTorch();
+	
+	if (led){
+		pFlashData->bTorchOn = (led->brightness) ? TRUE : FALSE;
+		ret = ERROR_SUCCESS;
+	}
+	else {
+		pFlashData->bTorchOn = FALSE;
+		pr_err("Failed to find LED Torch\n");
+		ret = ERROR_INVALID_HANDLE;
+	}
+	
+	pFlashData->bFlashOn = FALSE;
+	return ret;
 }
 
 //-----------------------------------------------------------------------------
@@ -181,13 +203,20 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 //-----------------------------------------------------------------------------
 DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
-    if (pInfo->torch_cdev)
-    {
-        pInfo->torch_cdev->brightness = pFlashData->bTorchOn ? pInfo->torch_cdev->max_brightness : 0;
-        pInfo->torch_cdev->brightness_set(pInfo->torch_cdev, pInfo->torch_cdev->brightness);
-    }
-
-	return ERROR_SUCCESS;
+	int ret;
+	struct led_classdev *led = FindTorch();
+	
+	if (led)
+	{
+		led->brightness = pFlashData->bTorchOn ? led->max_brightness : 0;
+		led->brightness_set(led, led->brightness);
+		ret = ERROR_SUCCESS;
+	} else {
+		pr_err("Failed to find LED Torch\n");
+		ret = ERROR_INVALID_HANDLE;
+	}
+	
+	return ret;
 }
 
 #if 0
