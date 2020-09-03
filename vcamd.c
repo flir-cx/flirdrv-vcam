@@ -248,6 +248,8 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_GRAB_STILL:
 	case IOCTL_CAM_MIRROR_ON:
 	case IOCTL_CAM_MIRROR_OFF:
+	case IOCTL_CAM_FLIP_ON:
+	case IOCTL_CAM_FLIP_OFF:
 		switch (pInfo->eCamModel) {
 		case MT9P111:
 			return MT9P111_IOControl(pInfo, Ioctl, pBuf, pUserBuf);

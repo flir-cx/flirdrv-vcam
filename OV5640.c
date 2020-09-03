@@ -21,7 +21,7 @@
 #include <linux/i2c.h>
 #include "OV5640.h"
 
-static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
+BOOL OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 		       struct reg_value *pMode, USHORT elements, CAM_NO camera)
 {
 	struct i2c_msg msgs[1];
@@ -71,12 +71,12 @@ static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 	return ERROR_SUCCESS;
 }
 
-void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO cam, bool enable)
+void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
 {
 	if (enable)
-		DoI2CWrite(pInfo, stream_on, dim(stream_on), cam);
+		OV5640_DoI2CWrite(pInfo, stream_on, dim(stream_on), camera);
 	else
-		DoI2CWrite(pInfo, stream_off, dim(stream_off), cam);
+		OV5640_DoI2CWrite(pInfo, stream_off, dim(stream_off), camera);
 }
 
 void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
@@ -87,38 +87,31 @@ void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
 		/* Set register 0x300E[4:3] to 2'b11 before the PWDN pin is set high */
 		mipi_pwdn.u8Val |= 0x18;
 	}
-	DoI2CWrite(pInfo, &mipi_pwdn, 1, g_camera);
+	OV5640_DoI2CWrite(pInfo, &mipi_pwdn, 1, g_camera);
 }
 
-void OV5640_nightmode_off(PCAM_HW_INDEP_INFO pInfo, CAM_NO cam)
+static int OV5640_nightmode_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
 {
-	struct reg_value night_mode_off = { 0x3a00, 0x78 };	//night mode off
+	int ret;
 
-	DoI2CWrite(pInfo, &night_mode_off, 1, cam);
+	if (enable)
+		ret = OV5640_DoI2CWrite(pInfo, &night_mode_on, 1, camera);
+	else
+		ret = OV5640_DoI2CWrite(pInfo, &night_mode_off, 1, camera);
+	return ret;
 }
 
-void OV5640_nightmode_on(PCAM_HW_INDEP_INFO pInfo, CAM_NO cam)
+static int OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
 {
-	struct reg_value night_mode_on = { 0x3a00, 0x7c };	//night mode on
+	int ret;
 
-	DoI2CWrite(pInfo, &night_mode_on, 1, cam);
+	if (enable)
+		ret = OV5640_DoI2CWrite(pInfo, &autofocus_on, 1, camera);
+	else
+		ret = OV5640_DoI2CWrite(pInfo, &autofocus_off, 1, camera);
+	return ret;
 }
 
-/*Turn vcam autofocus on*/
-void OV5640_autofocus_on(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
-{
-	struct reg_value buff = { 0x3022, 0x04 };
-
-	DoI2CWrite(pInfo, &buff, 1, camera);
-}
-
-/*Turn vcam autofocus off*/
-void OV5640_autofocus_off(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
-{
-	struct reg_value buff = { 0x3022, 0x00 };
-
-	DoI2CWrite(pInfo, &buff, 1, camera);
-}
 
 /*Set vcam exposure value*/
 static void OV5640_set_exposure(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera,
@@ -128,15 +121,15 @@ static void OV5640_set_exposure(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera,
 
 	temp.u16RegAddr = 0x3500;
 	temp.u8Val = ((exp >> 16) & 0x0f);
-	DoI2CWrite(pInfo, &temp, 1, camera);
+	OV5640_DoI2CWrite(pInfo, &temp, 1, camera);
 
 	temp.u16RegAddr = 0x3501;
 	temp.u8Val = ((exp >> 8) & 0xff);
-	DoI2CWrite(pInfo, &temp, 1, camera);
+	OV5640_DoI2CWrite(pInfo, &temp, 1, camera);
 
 	temp.u16RegAddr = 0x3502;
 	temp.u8Val = (exp & 0xf0);
-	DoI2CWrite(pInfo, &temp, 1, camera);
+	OV5640_DoI2CWrite(pInfo, &temp, 1, camera);
 
 }
 
@@ -147,75 +140,75 @@ static void nightmode_on_off_work(struct work_struct *work)
 
 	// pr_err("VCAM turning nightmode off and on\n");
 	msleep(1000);
-	OV5640_nightmode_off(pInfo, pInfo->cam);
+	OV5640_nightmode_enable(pInfo, pInfo->cam, FALSE);
 	msleep(1000);
-	OV5640_nightmode_on(pInfo, pInfo->cam);
+	OV5640_nightmode_enable(pInfo, pInfo->cam, TRUE);
 
 }
 
-static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO cam)
+static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 {
 	int ret;
 
-	OV5640_enable_stream(pInfo, cam, FALSE);
+	OV5640_enable_stream(pInfo, camera, FALSE);
 	ret =
-	    DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
-		       dim(ov5640_init_setting_9fps_5MP), cam);
+	    OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
+		       dim(ov5640_init_setting_9fps_5MP), camera);
 	if (ret)
 		return ret;
 
 	if (pInfo->edge_enhancement) {
 		ret =
-		    DoI2CWrite(pInfo, ov5640_edge_enhancement,
-			       dim(ov5640_edge_enhancement), cam);
+		    OV5640_DoI2CWrite(pInfo, ov5640_edge_enhancement,
+			       dim(ov5640_edge_enhancement), camera);
 		if (ret)
 			return ret;
 	}
 
 	if (pInfo->flip_image) {
 		ret =
-		  DoI2CWrite(pInfo, ov5640_flip_reg, dim(ov5640_flip_reg),
-				 cam);
+		  OV5640_DoI2CWrite(pInfo, ov5640_flip_reg, dim(ov5640_flip_reg),
+				 camera);
 		if (ret)
 			return ret;
 	}
 	if (pInfo->mirror_image) {
 		ret =
-		  DoI2CWrite(pInfo, ov5640_mirror_on_reg, dim(ov5640_mirror_on_reg),
-				 cam);
+		  OV5640_DoI2CWrite(pInfo, ov5640_mirror_on_reg, dim(ov5640_mirror_on_reg),
+				 camera);
 		if (ret)
 			return ret;
 	}
 
-	OV5640_enable_stream(pInfo, cam, TRUE);
+	OV5640_enable_stream(pInfo, camera, TRUE);
 	return ret;
 }
 
-static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO cam, int fov)
+static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 {
 	int ret;
 
-	OV5640_enable_stream(pInfo, cam, FALSE);
+	OV5640_enable_stream(pInfo, camera, FALSE);
 
 	switch (fov) {
 	case 54:
 		ret =
-		    DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54,
-			       dim(ov5640_setting_30fps_1280_960_HFOV54), cam);
+		    OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54,
+			       dim(ov5640_setting_30fps_1280_960_HFOV54), camera);
 		g_vcamFOV = fov;
 		break;
 
 	case 39:
 		ret =
-		    DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV39,
-			       dim(ov5640_setting_30fps_1280_960_HFOV39), cam);
+		    OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV39,
+			       dim(ov5640_setting_30fps_1280_960_HFOV39), camera);
 		g_vcamFOV = fov;
 		break;
 
 	case 28:
 		ret =
-		    DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV28,
-			       dim(ov5640_setting_30fps_1280_960_HFOV28), cam);
+		    OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV28,
+			       dim(ov5640_setting_30fps_1280_960_HFOV28), camera);
 		g_vcamFOV = fov;
 		break;
 
@@ -224,27 +217,42 @@ static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO cam, int fov)
 		ret = ERROR_NOT_SUPPORTED;
 	}
 
-	OV5640_enable_stream(pInfo, cam, TRUE);
+	OV5640_enable_stream(pInfo, camera, TRUE);
 
-	pInfo->cam = cam;
+	pInfo->cam = camera;
 	schedule_work(&pInfo->nightmode_work);
 	return ret;
 }
 
-static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
+static DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
+{
+	DWORD dwErr = ERROR_SUCCESS;
+
+	if (flip)
+		dwErr = OV5640_DoI2CWrite(pInfo, ov5640_flip_on_reg, dim(ov5640_flip_on_reg), g_camera);
+	else
+		dwErr = OV5640_DoI2CWrite(pInfo, ov5640_flip_off_reg, dim(ov5640_flip_off_reg), g_camera);
+
+	if (dwErr == ERROR_SUCCESS)
+		pInfo->flip_image = !pInfo->flip_image_hw;
+
+	return dwErr;
+}
+
+
+static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
 {
 	BOOL ret = ERROR_SUCCESS;
 
-	ret =
-	    DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
-		       dim(ov5640_init_setting_9fps_5MP), cam);
+	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
+				dim(ov5640_init_setting_9fps_5MP), camera);
 	if (ret)
 		return ret;
 
 	if (pInfo->flip_image) {
 		ret =
-		    DoI2CWrite(pInfo, ov5640_flip_reg, dim(ov5640_flip_reg),
-				 cam);
+		    OV5640_DoI2CWrite(pInfo, ov5640_flip_reg, dim(ov5640_flip_reg),
+				 camera);
 		if (ret)
 			return ret;
 	}
@@ -259,13 +267,13 @@ static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
 
 	if (pInfo->edge_enhancement) {
 		ret =
-			DoI2CWrite(pInfo, ov5640_edge_enhancement,
-				   dim(ov5640_edge_enhancement), cam);
+			OV5640_DoI2CWrite(pInfo, ov5640_edge_enhancement,
+				   dim(ov5640_edge_enhancement), camera);
 		if (ret)
 			return ret;
 	}
 
-	ret = OV5640_set_fov(pInfo, cam, 54);
+	ret = OV5640_set_fov(pInfo, camera, 54);
 	if (ret)
 		return ret;
 
@@ -426,6 +434,16 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 		break;
 	case IOCTL_CAM_MIRROR_OFF:
 		dwErr = OV5640_mirror_enable(pInfo, g_camera, FALSE);
+		break;
+	case IOCTL_CAM_FLIP_ON:
+		LOCK(pInfo);
+		dwErr = OV5640_FlipImage(pInfo, true);
+		UNLOCK(pInfo);
+		break;
+	case IOCTL_CAM_FLIP_OFF:
+		LOCK(pInfo);
+		dwErr = OV5640_FlipImage(pInfo, false);
+		UNLOCK(pInfo);
 		break;
 	default:
 		pr_err("VCAM Unsupported IOCTL code %lu\n", Ioctl);

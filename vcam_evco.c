@@ -67,6 +67,7 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 	pInfo->cameraI2CAddress[0] = 0x78;
 	pInfo->mirror_image = 0;
 	pInfo->flip_image = 0;
+	pInfo->flip_image_hw = 0;
 	pInfo->edge_enhancement = 1;
 
 #ifdef CONFIG_OF

@@ -23,6 +23,8 @@ struct reg_value {
 	u16 u16RegAddr;
 	u8 u8Val;
 };
+BOOL OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
+			      struct reg_value *pMode, USHORT elements, CAM_NO camera);
 
 /* Settings from
  * Rocky/Elektronik/Komponenter/datablad/VCam/Settings/
