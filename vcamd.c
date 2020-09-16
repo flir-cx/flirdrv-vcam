@@ -33,9 +33,6 @@
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 #include "../arch/arm/mach-imx/hardware.h"
-#ifndef __devexit
-#define __devexit
-#endif
 #define cpu_is_imx6s   cpu_is_imx6dl
 #else // LINUX_VERSION_CODE
 #include "mach/mx6.h"
@@ -51,7 +48,7 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 			 DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
 
 static PCAM_HW_INDEP_INFO gpDev;
-static struct file_operations vcam_fops = {
+static const struct file_operations vcam_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = VCAM_IOControl,
 	.open = VCAM_Open,
@@ -112,24 +109,24 @@ static int vcam_remove(struct platform_device *pdev)
 		i2c_put_adapter(gpDev->hI2C);
 
 #ifdef CONFIG_OF
-		if (gpDev->reg_vcm1i2c) {
+		if (gpDev->reg_vcm1i2c)
 			regulator_put(gpDev->reg_vcm1i2c);
-		}
-		if (gpDev->reg_vcm2i2c) {
+
+		if (gpDev->reg_vcm2i2c)
 			regulator_put(gpDev->reg_vcm2i2c);
-		}
-		if (gpDev->reg_vcm) {
+
+		if (gpDev->reg_vcm)
 			regulator_put(gpDev->reg_vcm);
-		}
-		if (gpDev->pwdn_gpio) {
+
+		if (gpDev->pwdn_gpio)
 			gpio_free(gpDev->pwdn_gpio);
-		}
-		if (gpDev->reset_gpio) {
+
+		if (gpDev->reset_gpio)
 			gpio_free(gpDev->reset_gpio);
-		}
-		if (gpDev->clk_en_gpio) {
+
+		if (gpDev->clk_en_gpio)
 			gpio_free(gpDev->clk_en_gpio);
-		}
+
 		if (gpDev->node)
 			of_node_put(gpDev->node);
 #endif
@@ -269,6 +266,7 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_GET_FLASH:
 		{
 			VCAMIOCTLFLASH *pFlashData = (VCAMIOCTLFLASH *) pBuf;
+
 			LOCK(pInfo);
 
 			// Callback to platform code to get torch/flash state
@@ -280,6 +278,7 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_GET_CAM_MODEL:
 		{
 			VCAMIOCTLCAMMODEL *pModel = (VCAMIOCTLCAMMODEL *) pBuf;
+
 			LOCK(pInfo);
 			pModel->eCamModel = pInfo->eCamModel;
 

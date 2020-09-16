@@ -28,12 +28,10 @@
 // Function prototypes
 static BOOL InitI2CIoport(PCAM_HW_INDEP_INFO pInfo);
 static BOOL SetI2CIoport(PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value);
-// static BOOL GetI2CIoport (PCAM_HW_INDEP_INFO pInfo, UCHAR bit);
-
 static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH * pFlashData);
+			   VCAMIOCTLFLASH *pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH * pFlashData);
+			   VCAMIOCTLFLASH *pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 
@@ -53,6 +51,7 @@ static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 DWORD PicoInitHW(PCAM_HW_INDEP_INFO pInfo)
 {
 	BOOL ret = TRUE;
+
 	pInfo->hI2C = i2c_get_adapter(2);
 	pInfo->eCamModel = MT9P111;
 	pInfo->pGetTorchState = GetTorchState;
@@ -96,6 +95,7 @@ BOOL InitI2CIoport(PCAM_HW_INDEP_INFO pInfo)
 	int res;
 	UCHAR buf[2];
 	UCHAR cmd;
+
 	msgs[0].addr = IOPORT_I2C_ADDR >> 1;
 	msgs[0].flags = 0;
 	msgs[0].len = 1;
@@ -171,44 +171,6 @@ BOOL SetI2CIoport(PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value)
 	return (res > 0);
 }
 
-#if 0
-//-----------------------------------------------------------------------------
-//
-// Function: GetI2CIoport
-//
-// This function will get one bit of the ioport on PIRI
-//
-// Parameters:
-//
-// Returns:
-//      Returns status of bit.
-//
-//-----------------------------------------------------------------------------
-
-BOOL GetI2CIoport(PCAM_HW_INDEP_INFO pInfo, UCHAR bit)
-{
-	struct i2c_msg msgs[2];
-	int res;
-	UCHAR buf[2];
-	UCHAR cmd;
-
-	msgs[0].addr = IOPORT_I2C_ADDR >> 1;
-	msgs[0].flags = 0;
-	msgs[0].len = 1;
-	msgs[0].buf = &cmd;
-	msgs[1].addr = IOPORT_I2C_ADDR >> 1;
-	msgs[1].flags = I2C_M_RD;
-	msgs[1].len = 1;
-	msgs[1].buf = buf;
-
-	cmd = 0;		// Read port register
-	buf[0] = 0;
-	res = i2c_transfer(pInfo->hI2C, msgs, 2);
-
-	return ((buf[0] & (1 << bit)) != 0);
-}
-#endif
-
 //-----------------------------------------------------------------------------
 //
 // Function:  GetTorchState
@@ -220,7 +182,7 @@ BOOL GetI2CIoport(PCAM_HW_INDEP_INFO pInfo, UCHAR bit)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
+DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	pFlashData->bTorchOn = FALSE;
 	pFlashData->bFlashOn = FALSE;
@@ -239,7 +201,7 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
+DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	return ERROR_SUCCESS;
 }
@@ -261,17 +223,17 @@ void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 		SetI2CIoport(pInfo, VCM_PWR_EN, TRUE);
 		msleep(20);
 		SetI2CIoport(pInfo, VCM_CLK_EN, TRUE);
-		msleep(1);
+		usleep(10000, 20000);
 		SetI2CIoport(pInfo, VCM_RESET, FALSE);
-		msleep(1);
+		usleep(10000, 20000);
 		SetI2CIoport(pInfo, VCM_I2C_EN, TRUE);
 	} else {
 		SetI2CIoport(pInfo, VCM_I2C_EN, FALSE);
-		msleep(1);
+		usleep(10000, 20000);
 		SetI2CIoport(pInfo, VCM_RESET, TRUE);
-		msleep(1);
+		usleep(10000, 20000);
 		SetI2CIoport(pInfo, VCM_CLK_EN, FALSE);
-		msleep(1);
+		usleep(10000, 20000);
 		SetI2CIoport(pInfo, VCM_PWR_EN, FALSE);
 	}
 }

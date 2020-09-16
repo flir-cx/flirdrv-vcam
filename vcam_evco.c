@@ -28,9 +28,9 @@
 
 // Function prototypes
 static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH * pFlashData);
+			   VCAMIOCTLFLASH *pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH * pFlashData);
+			   VCAMIOCTLFLASH *pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend);
 
@@ -95,19 +95,20 @@ int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int *ppin, char *of_name,
 		   int value)
 {
 	int pin, retval = -1;
+
 	pin = of_get_named_gpio_flags(pInfo->node, of_name, 0, NULL);
 	if (gpio_is_valid(pin) == 0) {
 		pr_err("VCAM: %s  can not be used\n", of_name);
 	} else {
 		*ppin = pin;
 		retval = gpio_request(pin, of_name);
-		if (retval) {
+		if (retval)
 			pr_err("VCAM: Fail registering %s", of_name);
-		}
+
 		retval = gpio_direction_output(pin, value);
-		if (retval) {
+		if (retval)
 			pr_err("VCAM: Fail setting direction for %s", of_name);
-		}
+
 	}
 	return retval;
 
@@ -177,7 +178,7 @@ struct led_classdev *FindTorch(void)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
+DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	int ret;
 	struct led_classdev *led = FindTorch();
@@ -209,7 +210,7 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
+DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	int ret;
 	struct led_classdev *led = FindTorch();
@@ -231,36 +232,6 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 	return ret;
 }
 
-#if 0
-//-----------------------------------------------------------------------------
-//
-// Function:  WriteVcam
-//
-// This function will
-//
-// Parameters:
-//
-// Returns:
-//
-//-----------------------------------------------------------------------------
-static DWORD WriteVcam(PCAM_HW_INDEP_INFO pInfo, u8 i2cAddress, u16 address,
-		       u8 data)
-{
-	struct i2c_msg msgs[1];
-	UCHAR buf[3];
-
-	msgs[0].addr = i2cAddress >> 1;
-	msgs[0].flags = 0;
-	msgs[0].len = 3;
-	msgs[0].buf = buf;
-	buf[0] = (address >> 8) & 0xff;
-	buf[1] = address & 0xff;
-	buf[2] = data;
-
-	return i2c_transfer(pInfo->hI2C, msgs, 1);
-}
-#endif
-
 //-----------------------------------------------------------------------------
 //
 // Function:  EnablePower
@@ -281,14 +252,14 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 		msleep(20);
 		gpio_direction_output(pInfo->clk_en_gpio, 0);
 		gpio_direction_output(pInfo->pwdn_gpio, 0);
-		msleep(1);
+		usleep_range(10000, 20000);
 		gpio_direction_output(pInfo->reset_gpio, 1);
 	} else {
 		gpio_direction_output(pInfo->reset_gpio, 0);
-		msleep(1);
+		usleep_range(10000, 20000);
 		gpio_direction_output(pInfo->pwdn_gpio, 1);
 		gpio_direction_output(pInfo->clk_en_gpio, 1);
-		msleep(1);
+		usleep_range(10000, 20000);
 		ret = regulator_disable(pInfo->reg_vcm);
 	}
 #endif

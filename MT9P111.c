@@ -814,7 +814,8 @@ static const UCHAR I2CDataInitPart9[][5] = {
 
 static const UCHAR I2CDataInitPart10[][5] = {
 	{ 4, 0x3C, 0x00, 0x00, 0x07 },	// jpssmode, Jpeg with embedded thumbnail [JALE]
-	{ 4, 0x3c, 0x02, 0x06, 0x11 },	//-- jpssmode_ctrl, jpss_enable_status_markers, jpss_insert_jpeg_status [JALE]
+	{ 4, 0x3c, 0x02, 0x06, 0x11 },	//-- jpssmode_ctrl, jpss_enable_status_markers,
+					//   jpss_insert_jpeg_status [JALE]
 	{ 4, 0xD8, 0x16, 0x02, 0x80 },	// jpeg_thumbnail_width = 640 [JALE]
 	{ 4, 0xD8, 0x18, 0x01, 0xE0 },	// jpeg_thumbnail_height = 480 [JALE]
 	{ 4, 0xD8, 0x26, 0x02, 0x11 },	// jpeg_tn_ctrl_var, YCbCr thumbnail [JALE]
@@ -882,7 +883,7 @@ static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 			ready = FALSE;
 			start = GetTickCount();
 			while (!ready) {
-				msleep(10);
+				usleep_range(10000, 20000);
 
 				msgs[0].flags = 0;
 				msgs[0].len = 2;
@@ -899,20 +900,21 @@ static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 					status = (stat[0] << 8) | stat[1];
 					if (status == pollValue) {
 						pr_err
-						    ("DoI2CWrite cam %lu got result %X in %lu ms\n",
-						     cam, status,
-						     GetTickCount() - start);
+							("%s cam %lu got result %X in %lu ms\n",
+							 __func__,
+							 cam, status,
+							 GetTickCount() - start);
 						ready = TRUE;
 					}
 				}
-				if ((GetTickCount() - start) > timeout) {
+				if ((GetTickCount() - start) > timeout)
 					break;
-				}
 			}
 			if (!ready) {
 				pr_err
-				    ("DoI2CWrite cam %lu timeout with result %X\n",
-				     cam, status);
+					("%s cam %lu timeout with result %X\n",
+					 __func__,
+					 cam, status);
 			}
 		} else if (cam == cam_first) {
 			// Fixed delay
@@ -930,11 +932,12 @@ static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 			if (ret <= 0) {
 				if (retries-- <= 0) {
 					pr_err
-					    ("DoI2CWrite failing on element %d of %d\n",
-					     i, elements);
+						("%s failing on element %d of %d\n",
+						 __func__,
+						 i, elements);
 					return FALSE;	// Too many errors, give up
 				}
-				msleep(10);
+				usleep_range(10000, 20000);
 				i--;
 				continue;
 			}
@@ -944,42 +947,6 @@ static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 
 	return TRUE;
 }
-
-#if 0
-static BOOL DoI2CRead(PCAM_HW_INDEP_INFO pInfo, USHORT * result, USHORT reg,
-		      CAM_NO camera)
-{
-	struct i2c_msg msgs[2];
-	DWORD ret = 0;
-	UCHAR cmd[2];
-	UCHAR stat[2];
-
-	// Check if camera in use
-	msgs[0].addr = BSPGetCameraI2CAddress(camera) >> 1;
-	if (msgs[0].addr == 0)
-		return TRUE;
-	msgs[1].addr = msgs[0].addr;
-
-	msgs[0].flags = 0;
-	msgs[0].len = 2;
-	msgs[0].buf = cmd;
-	msgs[1].flags = I2C_M_RD | I2C_M_NOSTART;
-	msgs[1].len = 2;
-	msgs[1].buf = stat;
-
-	cmd[0] = (UCHAR) (reg >> 8);
-	cmd[1] = (UCHAR) (reg & 0xFF);
-
-	ret = i2c_transfer(pInfo->hI2C, msgs, 2);
-
-	if (ret > 0) {
-		*result = (stat[0] << 8) | stat[1];
-	} else {
-		pr_err("DoI2CRead failing reading reg %d\n", reg);
-	}
-	return ret;
-}
-#endif
 
 static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO cam)
 {
@@ -1069,6 +1036,7 @@ DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_GET_ACTIVE:
 		{
 			VCAMIOCTLACTIVE *pVcamIoctl = (VCAMIOCTLACTIVE *) pBuf;
+
 			LOCK(pInfo);
 			pVcamIoctl->bActive = bCamActive[CAM_1]
 			    || bCamActive[CAM_2];
@@ -1116,10 +1084,8 @@ DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_SET_FLASH:
 		{
 			VCAMIOCTLFLASH *pFlashData = (VCAMIOCTLFLASH *) pBuf;
-			LOCK(pInfo);
 
-			if (pFlashData->bFlashOn) {
-			}
+			LOCK(pInfo);
 
 			dwErr = pInfo->pSetTorchState(pInfo, pFlashData);
 			UNLOCK(pInfo);
@@ -1149,3 +1115,4 @@ DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo,
 
 	return dwErr;
 }
+

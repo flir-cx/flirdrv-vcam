@@ -39,9 +39,9 @@
 
 // Function prototypes
 static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH * pFlashData);
+			   VCAMIOCTLFLASH *pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH * pFlashData);
+			   VCAMIOCTLFLASH *pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 
@@ -78,10 +78,12 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 	pInfo->pSetTorchState = SetTorchState;
 	pInfo->pEnablePower = EnablePower;
 	pInfo->pSuspend = Suspend;
-	pInfo->cameraI2CAddress[0] = 0x78;	//At power on vcam modules will share 0x78 i2c address
+	pInfo->cameraI2CAddress[0] = 0x78;	// At power on vcam modules will
+						// share 0x78 i2c address
 	pInfo->cameraI2CAddress[1] = 0x7A;
 	pInfo->flip_image = 1;
-	pInfo->edge_enhancement = 0;	//Rocky mipi to parallell IC will introduce artifacts if enabled
+	pInfo->edge_enhancement = 0;	// Rocky mipi to parallell IC will
+					// introduce artifacts if enabled
 
 #ifdef CONFIG_OF
 	// Find torch
@@ -95,8 +97,6 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 		if (strcmp(led_cdev->name, "torch") == 0) {
 			pr_err("*** Found led with name torch\n");
 			pInfo->torch_cdev = led_cdev;
-		} else {
-			//  pr_err("Found led with name %s\n", led_cdev->name);
 		}
 	}
 	up_read(&leds_list_lock);
@@ -129,19 +129,20 @@ int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int *ppin, char *of_name,
 		   int value)
 {
 	int pin, retval = -1;
+
 	pin = of_get_named_gpio_flags(pInfo->node, of_name, 0, NULL);
 	if (gpio_is_valid(pin) == 0) {
 		pr_err("VCAM: %s  can not be used\n", of_name);
 	} else {
 		*ppin = pin;
 		retval = gpio_request(pin, of_name);
-		if (retval) {
+		if (retval)
 			pr_err("VCAM: Fail registering %s", of_name);
-		}
+
 		retval = gpio_direction_output(pin, value);
-		if (retval) {
+		if (retval)
 			pr_err("VCAM: Fail setting direction for %s", of_name);
-		}
+
 	}
 	return retval;
 
@@ -182,7 +183,7 @@ int requestRegulator(PCAM_HW_INDEP_INFO pInfo, struct regulator **reg,
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
+DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	if (pInfo->torch_cdev)
 		pFlashData->bTorchOn =
@@ -205,15 +206,13 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
+DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	if (pInfo->torch_cdev) {
 		pInfo->torch_cdev->brightness =
-		    pFlashData->bTorchOn ? pInfo->torch_cdev->
-		    max_brightness : 0;
+		    pFlashData->bTorchOn ? pInfo->torch_cdev->max_brightness : 0;
 		pInfo->torch_cdev->brightness_set(pInfo->torch_cdev,
-						  pInfo->torch_cdev->
-						  brightness);
+						  pInfo->torch_cdev->brightness);
 	}
 
 	return ERROR_SUCCESS;
@@ -265,23 +264,23 @@ void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 		ret = regulator_enable(pInfo->reg_vcm);
 		msleep(20);
 		gpio_direction_output(pInfo->pwdn_gpio, 0);
-		msleep(1);
+		usleep(10000, 20000);
 		gpio_direction_output(pInfo->reset_gpio, 1);
-		msleep(1);
+		usleep(10000, 20000);
 		ret = regulator_enable(pInfo->reg_vcm2i2c);
-		msleep(1);	//Change vcam2 i2c address from 0x78 to 0x7a
+		usleep(10000, 20000);	//Change vcam2 i2c address from 0x78 to 0x7a
 		WriteVcam(pInfo, pInfo->cameraI2CAddress[0], 0x3100,
 			  pInfo->cameraI2CAddress[1]);
 		ret = regulator_enable(pInfo->reg_vcm1i2c);
 	} else {
 		ret = regulator_disable(pInfo->reg_vcm1i2c);
-		msleep(1);
+		usleep(10000, 20000);
 		ret = regulator_disable(pInfo->reg_vcm2i2c);
-		msleep(1);
+		usleep(10000, 20000);
 		gpio_direction_output(pInfo->reset_gpio, 0);
-		msleep(1);
+		usleep(10000, 20000);
 		gpio_direction_output(pInfo->pwdn_gpio, 1);
-		msleep(1);
+		usleep(10000, 20000);
 		ret = regulator_disable(pInfo->reg_vcm);
 	}
 #endif

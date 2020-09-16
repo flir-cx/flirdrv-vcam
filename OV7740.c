@@ -255,7 +255,7 @@ static const UCHAR I2CDataStandByExit[][2] = {
 // Local functions
 
 static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
-		       const UCHAR * buf, USHORT elements)
+		       const UCHAR *buf, USHORT elements)
 {
 	struct i2c_msg msg;
 	int ret;
@@ -276,11 +276,12 @@ static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 		if (ret <= 0) {
 			if (retries-- <= 0) {
 				pr_err
-				    ("DoI2CWrite failing on element %d of %d\n",
-				     i, elements);
+					("%s failing on element %d of %d\n",
+					 __func__,
+					 i, elements);
 				return FALSE;	// Too many errors, give up
 			}
-			msleep(10);
+			usleep_range(10000, 20000);
 			i--;
 			continue;
 		}
@@ -289,38 +290,6 @@ static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 
 	return TRUE;
 }
-
-#if 0
-static BOOL DoI2CRead(PCAM_HW_INDEP_INFO pInfo, USHORT * result, USHORT reg)
-{
-	struct i2c_msg msgs[2];
-	DWORD ret = 0;
-	UCHAR cmd[2];
-	UCHAR stat[2];
-
-	msgs[0].addr = pInfo->cameraI2CAddress[0] >> 1;
-	msgs[1].addr = msgs[0].addr;
-
-	msgs[0].flags = 0;
-	msgs[0].len = 2;
-	msgs[0].buf = cmd;
-	msgs[1].flags = I2C_M_RD | I2C_M_NOSTART;
-	msgs[1].len = 2;
-	msgs[1].buf = stat;
-
-	cmd[0] = (UCHAR) (reg >> 8);
-	cmd[1] = (UCHAR) (reg & 0xFF);
-
-	ret = i2c_transfer(pInfo->hI2C, msgs, 2);
-
-	if (ret > 0) {
-		*result = (stat[0] << 8) | stat[1];
-	} else {
-		pr_err("DoI2CRead failing reading reg %d\n", reg);
-	}
-	return ret;
-}
-#endif
 
 BOOL OV7740_Init(PCAM_HW_INDEP_INFO pInfo)
 {
@@ -410,10 +379,8 @@ DWORD OV7740_IOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_SET_FLASH:
 		{
 			VCAMIOCTLFLASH *pFlashData = (VCAMIOCTLFLASH *) pBuf;
-			LOCK(pInfo);
 
-			if (pFlashData->bFlashOn) {
-			}
+			LOCK(pInfo);
 
 			dwErr = pInfo->pSetTorchState(pInfo, pFlashData);
 			UNLOCK(pInfo);
