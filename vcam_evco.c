@@ -27,14 +27,18 @@
 // Local variables
 
 // Function prototypes
-static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
-static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData);
+static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo,
+			   VCAMIOCTLFLASH * pFlashData);
+static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
+			   VCAMIOCTLFLASH * pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend);
 
 #ifdef CONFIG_OF
-static int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int * ppin, char * of_name, int value );
-static int requestRegulator(PCAM_HW_INDEP_INFO pInfo,struct regulator ** reg, char * of_name,int enable);
+static int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int *ppin, char *of_name,
+			  int value);
+static int requestRegulator(PCAM_HW_INDEP_INFO pInfo, struct regulator **reg,
+			    char *of_name, int enable);
 #endif
 
 //-----------------------------------------------------------------------------
@@ -52,84 +56,86 @@ static int requestRegulator(PCAM_HW_INDEP_INFO pInfo,struct regulator ** reg, ch
 
 DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 {
-    BOOL ret = TRUE;
+	BOOL ret = TRUE;
 
-    pInfo->hI2C = i2c_get_adapter(2);
-    pInfo->eCamModel = OV5640;
-    pInfo->pGetTorchState = GetTorchState;
-    pInfo->pSetTorchState = SetTorchState;
-    pInfo->pEnablePower = EnablePower;
-    pInfo->pSuspend = Suspend;
-    pInfo->cameraI2CAddress[0] = 0x78;
-    pInfo->flip_image= 0;
-    pInfo->edge_enhancement = 1;
+	pInfo->hI2C = i2c_get_adapter(2);
+	pInfo->eCamModel = OV5640;
+	pInfo->pGetTorchState = GetTorchState;
+	pInfo->pSetTorchState = SetTorchState;
+	pInfo->pEnablePower = EnablePower;
+	pInfo->pSuspend = Suspend;
+	pInfo->cameraI2CAddress[0] = 0x78;
+	pInfo->flip_image = 0;
+	pInfo->edge_enhancement = 1;
 
- #ifdef CONFIG_OF
+#ifdef CONFIG_OF
 
-    if (of_find_property(pInfo->node, "flip-image", NULL))
-        pInfo->flip_image = 1;
+	if (of_find_property(pInfo->node, "flip-image", NULL))
+		pInfo->flip_image = 1;
 
-    ret =requestGPIOpin(pInfo,&pInfo->reset_gpio,"vcam_reset-gpio",0);
-    if(!ret)
-        ret = requestRegulator(pInfo,&pInfo->reg_vcm,"VCM_DOVDD",0);
-    if(!ret)
-        ret = requestGPIOpin(pInfo,&pInfo->pwdn_gpio,"vcam_pwdn-gpio",1);
-    if(!ret)
-        ret = requestGPIOpin(pInfo,&pInfo->clk_en_gpio,"vcam_clk_en-gpio",1);
-    if (!ret)
-        EnablePower(pInfo, TRUE);
+	ret = requestGPIOpin(pInfo, &pInfo->reset_gpio, "vcam_reset-gpio", 0);
+	if (!ret)
+		ret = requestRegulator(pInfo, &pInfo->reg_vcm, "VCM_DOVDD", 0);
+	if (!ret)
+		ret =
+		    requestGPIOpin(pInfo, &pInfo->pwdn_gpio, "vcam_pwdn-gpio",
+				   1);
+	if (!ret)
+		ret =
+		    requestGPIOpin(pInfo, &pInfo->clk_en_gpio,
+				   "vcam_clk_en-gpio", 1);
+	if (!ret)
+		EnablePower(pInfo, TRUE);
 #endif
-    return TRUE;
+	return TRUE;
 }
 
-
- #ifdef CONFIG_OF
-int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int * ppin, char * of_name, int value )
+#ifdef CONFIG_OF
+int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int *ppin, char *of_name,
+		   int value)
 {
-    int pin,retval=-1;
-    pin = of_get_named_gpio_flags(pInfo->node, of_name, 0, NULL);
-    if (gpio_is_valid(pin) == 0){
-        pr_err("VCAM: %s  can not be used\n",of_name);
-    } else {
-        *ppin = pin;
-        retval = gpio_request(pin, of_name);
-        if(retval){
-            pr_err("VCAM: Fail registering %s",of_name);
-        }
-        retval = gpio_direction_output(pin, value);
-        if(retval){
-            pr_err("VCAM: Fail setting direction for %s",of_name);
-        }
-    }
-    return retval;
-
-}
-
-int requestRegulator(PCAM_HW_INDEP_INFO pInfo,struct regulator ** reg, char * of_name,int enable)
-{
-    int retval = -1;
-    *reg = regulator_get(&pInfo->pLinuxDevice->dev, of_name);
-	if(IS_ERR(*reg))
-	{
-		pr_err("VCAM: Error on %s get\n",of_name);
+	int pin, retval = -1;
+	pin = of_get_named_gpio_flags(pInfo->node, of_name, 0, NULL);
+	if (gpio_is_valid(pin) == 0) {
+		pr_err("VCAM: %s  can not be used\n", of_name);
+	} else {
+		*ppin = pin;
+		retval = gpio_request(pin, of_name);
+		if (retval) {
+			pr_err("VCAM: Fail registering %s", of_name);
+		}
+		retval = gpio_direction_output(pin, value);
+		if (retval) {
+			pr_err("VCAM: Fail setting direction for %s", of_name);
+		}
 	}
-	else
-	{
-        retval =0;
-		if(enable)
-            retval = regulator_enable(*reg);
-        else if(regulator_is_enabled(*reg))
-            retval = regulator_disable(*reg);
+	return retval;
 
-		if (retval){
-			pr_err("VCAM: Could not %s %s regulator\n",enable?"enable":"disable",of_name);
+}
+
+int requestRegulator(PCAM_HW_INDEP_INFO pInfo, struct regulator **reg,
+		     char *of_name, int enable)
+{
+	int retval = -1;
+	*reg = regulator_get(&pInfo->pLinuxDevice->dev, of_name);
+	if (IS_ERR(*reg)) {
+		pr_err("VCAM: Error on %s get\n", of_name);
+	} else {
+		retval = 0;
+		if (enable)
+			retval = regulator_enable(*reg);
+		else if (regulator_is_enabled(*reg))
+			retval = regulator_disable(*reg);
+
+		if (retval) {
+			pr_err("VCAM: Could not %s %s regulator\n",
+			       enable ? "enable" : "disable", of_name);
 		}
 	}
 
-    return retval;
+	return retval;
 }
 #endif
-
 
 //-----------------------------------------------------------------------------
 //
@@ -147,16 +153,16 @@ struct led_classdev *FindTorch(void)
 	extern struct list_head leds_list;
 	extern struct rw_semaphore leds_list_lock;
 	/* Find torch */
-	struct led_classdev *led_cdev, *led=NULL;
+	struct led_classdev *led_cdev, *led = NULL;
 	down_read(&leds_list_lock);
 	list_for_each_entry(led_cdev, &leds_list, node) {
-		if (strcmp(led_cdev->name, "torch") == 0){
-			led=led_cdev;
+		if (strcmp(led_cdev->name, "torch") == 0) {
+			led = led_cdev;
 			break;
 		}
 	}
 	up_read(&leds_list_lock);
-	
+
 	return led;
 }
 
@@ -175,12 +181,11 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
 	int ret;
 	struct led_classdev *led = FindTorch();
-	
-	if (led){
+
+	if (led) {
 		pFlashData->bTorchOn = (led->brightness) ? TRUE : FALSE;
 		ret = ERROR_SUCCESS;
-	}
-	else {
+	} else {
 		pFlashData->bTorchOn = FALSE;
 		pr_err_once("Failed to find LED Torch\n");
 		//Here we want to return ERROR_INVALID_HANDLE, but due to appcore and webapplications, we need
@@ -188,7 +193,7 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 		// ret = ERROR_INVALID_HANDLE;
 		ret = ERROR_SUCCESS;
 	}
-	
+
 	pFlashData->bFlashOn = FALSE;
 	return ret;
 }
@@ -208,10 +213,10 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
 	int ret;
 	struct led_classdev *led = FindTorch();
-	
-	if (led)
-	{
-		led->brightness = pFlashData->bTorchOn ? led->max_brightness : 0;
+
+	if (led) {
+		led->brightness =
+		    pFlashData->bTorchOn ? led->max_brightness : 0;
 		led->brightness_set(led, led->brightness);
 		ret = ERROR_SUCCESS;
 	} else {
@@ -222,7 +227,7 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 		// ret = ERROR_INVALID_HANDLE;
 		ret = ERROR_SUCCESS;
 	}
-	
+
 	return ret;
 }
 
@@ -238,20 +243,21 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-static DWORD WriteVcam(PCAM_HW_INDEP_INFO pInfo,u8 i2cAddress,u16 address,u8 data)
+static DWORD WriteVcam(PCAM_HW_INDEP_INFO pInfo, u8 i2cAddress, u16 address,
+		       u8 data)
 {
-    struct i2c_msg msgs[1];
-    UCHAR buf[3];
+	struct i2c_msg msgs[1];
+	UCHAR buf[3];
 
-    msgs[0].addr = i2cAddress >> 1;
-    msgs[0].flags = 0;
-    msgs[0].len = 3;
-    msgs[0].buf = buf;
-    buf[0] = (address >>8) & 0xff;
-    buf[1] = address & 0xff;
-    buf[2] = data;
+	msgs[0].addr = i2cAddress >> 1;
+	msgs[0].flags = 0;
+	msgs[0].len = 3;
+	msgs[0].buf = buf;
+	buf[0] = (address >> 8) & 0xff;
+	buf[1] = address & 0xff;
+	buf[2] = data;
 
-    return i2c_transfer(pInfo->hI2C, msgs, 1);
+	return i2c_transfer(pInfo->hI2C, msgs, 1);
 }
 #endif
 
@@ -268,26 +274,23 @@ static DWORD WriteVcam(PCAM_HW_INDEP_INFO pInfo,u8 i2cAddress,u16 address,u8 dat
 //-----------------------------------------------------------------------------
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 {
-   int ret=0;
+	int ret = 0;
 #ifdef CONFIG_OF
-    if (bEnable)
-    {
-        ret=regulator_enable(pInfo->reg_vcm);
-        msleep(20);
-        gpio_direction_output(pInfo->clk_en_gpio, 0);
-        gpio_direction_output(pInfo->pwdn_gpio, 0);
-        msleep(1);
-        gpio_direction_output(pInfo->reset_gpio, 1);
-    }
-    else
-    {
-        gpio_direction_output(pInfo->reset_gpio, 0);
-        msleep(1);
-        gpio_direction_output(pInfo->pwdn_gpio, 1);
-        gpio_direction_output(pInfo->clk_en_gpio, 1);
-        msleep(1);
-        ret=regulator_disable(pInfo->reg_vcm);
-    }
+	if (bEnable) {
+		ret = regulator_enable(pInfo->reg_vcm);
+		msleep(20);
+		gpio_direction_output(pInfo->clk_en_gpio, 0);
+		gpio_direction_output(pInfo->pwdn_gpio, 0);
+		msleep(1);
+		gpio_direction_output(pInfo->reset_gpio, 1);
+	} else {
+		gpio_direction_output(pInfo->reset_gpio, 0);
+		msleep(1);
+		gpio_direction_output(pInfo->pwdn_gpio, 1);
+		gpio_direction_output(pInfo->clk_en_gpio, 1);
+		msleep(1);
+		ret = regulator_disable(pInfo->reg_vcm);
+	}
 #endif
 }
 
@@ -305,15 +308,12 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
 {
 #ifdef CONFIG_OF
-    if(bSuspend)
-    {
-        EnablePower(pInfo,false);
-    }
-    else
-    {
-        EnablePower(pInfo,true);
-        OV5640_reinit(pInfo);
-    }
+	if (bSuspend) {
+		EnablePower(pInfo, false);
+	} else {
+		EnablePower(pInfo, true);
+		OV5640_reinit(pInfo);
+	}
 
 #endif
 }

@@ -37,7 +37,7 @@
 #define __devexit
 #endif
 #define cpu_is_imx6s   cpu_is_imx6dl
-#else  // LINUX_VERSION_CODE
+#else // LINUX_VERSION_CODE
 #include "mach/mx6.h"
 #define cpu_is_imx6s   cpu_is_mx6dl
 #define cpu_is_imx6q   cpu_is_mx6q
@@ -45,16 +45,13 @@
 
 // Function prototypes
 static long VCAM_IOControl(struct file *filep,
-		unsigned int cmd, unsigned long arg);
-static int VCAM_Open (struct inode *inode, struct file *filp);
+			   unsigned int cmd, unsigned long arg);
+static int VCAM_Open(struct inode *inode, struct file *filp);
 static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
-			 DWORD  Ioctl,
-			 PUCHAR pBuf,
-			 PUCHAR pUserBuf);
+			 DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
 
 static PCAM_HW_INDEP_INFO gpDev;
-static struct file_operations vcam_fops =
-{
+static struct file_operations vcam_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = VCAM_IOControl,
 	.open = VCAM_Open,
@@ -62,8 +59,8 @@ static struct file_operations vcam_fops =
 
 static struct miscdevice vcam_miscdev = {
 	.minor = MISC_DYNAMIC_MINOR,
-	.name  = "vcam0",
-	.fops  = &vcam_fops
+	.name = "vcam0",
+	.fops = &vcam_fops
 };
 
 static int vcam_probe(struct platform_device *pdev)
@@ -79,7 +76,7 @@ static int vcam_probe(struct platform_device *pdev)
 	// initialize this device instance
 	sema_init(&gpDev->semDevice, 1);
 
-		// Init hardware
+	// Init hardware
 #ifdef CONFIG_OF
 	gpDev->node = of_find_compatible_node(NULL, NULL, "flir,vcam");
 	if (of_machine_is_compatible("fsl,imx6dl-ec101") ||
@@ -89,15 +86,17 @@ static int vcam_probe(struct platform_device *pdev)
 #endif
 	if (cpu_is_mx51())
 		ret = PicoInitHW(gpDev);
-	else if(cpu_is_imx6s())
+	else if (cpu_is_imx6s())
 		ret = NecoInitHW(gpDev);
-	else if(cpu_is_imx6q())
+	else if (cpu_is_imx6q())
 		ret = RocoInitHW(gpDev);
-	else
-		{pr_err("VCAM: Error: Unknown Hardware\n"); ret = 0;}
+	else {
+		pr_err("VCAM: Error: Unknown Hardware\n");
+		ret = 0;
+	}
 
 	if (TRUE != ret)
-		pr_err ("VCAM_Init - failed to init hardware!\n");
+		pr_err("VCAM_Init - failed to init hardware!\n");
 
 	return (ret) ? 0 : -EIO;
 }
@@ -109,30 +108,29 @@ static int vcam_remove(struct platform_device *pdev)
 
 	// make sure this is a valid context
 	// if the device is running, stop it
-	if (gpDev != NULL)
-	{
+	if (gpDev != NULL) {
 		i2c_put_adapter(gpDev->hI2C);
 
 #ifdef CONFIG_OF
-		if(gpDev->reg_vcm1i2c){
+		if (gpDev->reg_vcm1i2c) {
 			regulator_put(gpDev->reg_vcm1i2c);
 		}
-		if(gpDev->reg_vcm2i2c){
+		if (gpDev->reg_vcm2i2c) {
 			regulator_put(gpDev->reg_vcm2i2c);
 		}
-		if(gpDev->reg_vcm){
+		if (gpDev->reg_vcm) {
 			regulator_put(gpDev->reg_vcm);
 		}
-		if(gpDev->pwdn_gpio){
+		if (gpDev->pwdn_gpio) {
 			gpio_free(gpDev->pwdn_gpio);
 		}
-		if(gpDev->reset_gpio){
+		if (gpDev->reset_gpio) {
 			gpio_free(gpDev->reset_gpio);
 		}
-		if(gpDev->clk_en_gpio){
+		if (gpDev->clk_en_gpio) {
 			gpio_free(gpDev->clk_en_gpio);
 		}
-		if(gpDev->node)
+		if (gpDev->node)
 			of_node_put(gpDev->node);
 #endif
 	}
@@ -160,15 +158,15 @@ static int vcam_resume(struct platform_device *pdev)
 }
 
 static struct platform_driver vcam_driver = {
-	.probe      = vcam_probe,
-	.remove     = vcam_remove,
-	.suspend    = vcam_suspend,
-	.shutdown    = vcam_shutdown,
-	.resume     = vcam_resume,
-	.driver     = {
-		.name   = "vcam",
-		.owner  = THIS_MODULE,
-	},
+	.probe = vcam_probe,
+	.remove = vcam_remove,
+	.suspend = vcam_suspend,
+	.shutdown = vcam_shutdown,
+	.resume = vcam_resume,
+	.driver = {
+		   .name = "vcam",
+		   .owner = THIS_MODULE,
+		    },
 };
 
 // Code
@@ -185,28 +183,28 @@ static int __init VCAM_Init(void)
 	}
 
 	// Allocate (and zero-initiate) our control structure.
-	gpDev = (PCAM_HW_INDEP_INFO)kzalloc(sizeof(CAM_HW_INDEP_INFO), GFP_KERNEL);
-	if ( !gpDev ) {
+	gpDev =
+	    (PCAM_HW_INDEP_INFO) kzalloc(sizeof(CAM_HW_INDEP_INFO), GFP_KERNEL);
+	if (!gpDev) {
 		pr_err("Error allocating memory for pDev, VCAM_Init failed\n");
 		goto err_alloc;
 	}
 
 	// Register linux driver
 	gpDev->pLinuxDevice = platform_device_alloc("vcam", 1);
-	if (gpDev->pLinuxDevice == NULL)
-	{
+	if (gpDev->pLinuxDevice == NULL) {
 		pr_err("VCAM: Error adding allocating device\n");
 		goto err_platform;
 	}
 
 	ret = platform_device_add(gpDev->pLinuxDevice);
-	if(ret) {
+	if (ret) {
 		pr_err("VCAM: Error adding platform device\n");
 		goto err_device;
 	}
 
 	ret = platform_driver_register(&vcam_driver);
-	if (ret < 0){
+	if (ret < 0) {
 		goto err_driver;
 		pr_err("VCAM: Error adding platform driver\n");
 	}
@@ -235,14 +233,11 @@ static void __devexit VCAM_Deinit(void)
 }
 
 static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
-						 DWORD  Ioctl,
-						 PUCHAR pBuf,
-						 PUCHAR pUserBuf)
+			 DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf)
 {
-	DWORD  dwErr = ERROR_INVALID_PARAMETER;
+	DWORD dwErr = ERROR_INVALID_PARAMETER;
 
-	switch (Ioctl)
-	{
+	switch (Ioctl) {
 	case IOCTL_CAM_GET_TEST:
 	case IOCTL_CAM_SET_TEST:
 	case IOCTL_CAM_GET_ACTIVE:
@@ -254,67 +249,57 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_SET_CAMMODE:
 	case IOCTL_CAM_INIT:
 	case IOCTL_CAM_GRAB_STILL:
-		switch (pInfo->eCamModel)
-		{
+		switch (pInfo->eCamModel) {
 		case MT9P111:
-			return MT9P111_IOControl(pInfo,
-					Ioctl,
-					pBuf,
-					pUserBuf);
+			return MT9P111_IOControl(pInfo, Ioctl, pBuf, pUserBuf);
 
 		case OV7740:
-			return OV7740_IOControl(pInfo,
-					Ioctl,
-					pBuf,
-					pUserBuf);
+			return OV7740_IOControl(pInfo, Ioctl, pBuf, pUserBuf);
 
 		case OV5640:
-			return OV5640_IOControl(pInfo,
-					Ioctl,
-					pBuf,
-					pUserBuf);
+			return OV5640_IOControl(pInfo, Ioctl, pBuf, pUserBuf);
 
 		default:
 			dwErr = ERROR_NOT_SUPPORTED;
-			pr_err ("CAM_Init - camera model undetermined!\n");
+			pr_err("CAM_Init - camera model undetermined!\n");
 			break;
 		}
 		break;
 
 	case IOCTL_CAM_GET_FLASH:
 		{
-			VCAMIOCTLFLASH * pFlashData = (VCAMIOCTLFLASH *) pBuf;
-	   		LOCK(pInfo);
+			VCAMIOCTLFLASH *pFlashData = (VCAMIOCTLFLASH *) pBuf;
+			LOCK(pInfo);
 
 			// Callback to platform code to get torch/flash state
 			dwErr = pInfo->pGetTorchState(pInfo, pFlashData);
-	   		UNLOCK(pInfo);
+			UNLOCK(pInfo);
 		}
 		break;
 
 	case IOCTL_CAM_GET_CAM_MODEL:
 		{
-			VCAMIOCTLCAMMODEL * pModel = (VCAMIOCTLCAMMODEL *) pBuf;
-	   		LOCK(pInfo);
+			VCAMIOCTLCAMMODEL *pModel = (VCAMIOCTLCAMMODEL *) pBuf;
+			LOCK(pInfo);
 			pModel->eCamModel = pInfo->eCamModel;
 
 			dwErr = ERROR_SUCCESS;
-	   		UNLOCK(pInfo);
+			UNLOCK(pInfo);
 		}
 		break;
 
 	case IOCTL_CAM_SUSPEND:
 		{
-		if (gpDev->pSuspend)
-			gpDev->pSuspend(gpDev, TRUE);
+			if (gpDev->pSuspend)
+				gpDev->pSuspend(gpDev, TRUE);
 		}
 		dwErr = ERROR_SUCCESS;
 		break;
 
 	case IOCTL_CAM_RESUME:
 		{
-		if (gpDev->pSuspend)
-			gpDev->pSuspend(gpDev, FALSE);
+			if (gpDev->pSuspend)
+				gpDev->pSuspend(gpDev, FALSE);
 		}
 		dwErr = ERROR_SUCCESS;
 		break;
@@ -335,30 +320,30 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 //
 ////////////////////////////////////////////////////////
 static long VCAM_IOControl(struct file *filep,
-		unsigned int cmd, unsigned long arg)
+			   unsigned int cmd, unsigned long arg)
 {
 	DWORD dwErr = ERROR_SUCCESS;
 	char *tmp;
 
 	tmp = kzalloc(_IOC_SIZE(cmd), GFP_KERNEL);
-	if (_IOC_DIR(cmd) & _IOC_WRITE)
-	{
-		pr_debug("VCAM Ioctl %X copy from user: %d\n", cmd, _IOC_SIZE(cmd));
+	if (_IOC_DIR(cmd) & _IOC_WRITE) {
+		pr_debug("VCAM Ioctl %X copy from user: %d\n", cmd,
+			 _IOC_SIZE(cmd));
 		dwErr = copy_from_user(tmp, (void *)arg, _IOC_SIZE(cmd));
 		if (dwErr)
 			pr_err("VCAM Copy from user failed: %lu\n", dwErr);
 	}
 
-	if (dwErr == ERROR_SUCCESS)
-	{
-		dwErr = DoIOControl(gpDev, cmd, tmp, (PUCHAR)arg);
+	if (dwErr == ERROR_SUCCESS) {
+		dwErr = DoIOControl(gpDev, cmd, tmp, (PUCHAR) arg);
 		if (dwErr)
-			pr_err("VCAM Ioctl failed: %X %ld %d\n", cmd, dwErr, _IOC_NR(cmd));
+			pr_err("VCAM Ioctl failed: %X %ld %d\n", cmd, dwErr,
+			       _IOC_NR(cmd));
 	}
 
-	if ((dwErr == ERROR_SUCCESS) && (_IOC_DIR(cmd) & _IOC_READ))
-	{
-		pr_debug("VCAM Ioctl %X copy to user: %u\n", cmd, _IOC_SIZE(cmd));
+	if ((dwErr == ERROR_SUCCESS) && (_IOC_DIR(cmd) & _IOC_READ)) {
+		pr_debug("VCAM Ioctl %X copy to user: %u\n", cmd,
+			 _IOC_SIZE(cmd));
 		dwErr = copy_to_user((void *)arg, tmp, _IOC_SIZE(cmd));
 		if (dwErr)
 			pr_err("VCAM Copy to user failed: %ld\n", dwErr);
@@ -368,16 +353,14 @@ static long VCAM_IOControl(struct file *filep,
 	return dwErr;
 }
 
-static int VCAM_Open (struct inode *inode, struct file *filp)
+static int VCAM_Open(struct inode *inode, struct file *filp)
 {
 	static BOOL init;
 
 	LOCK(gpDev);
-	if (!init)
-	{
+	if (!init) {
 		// Detect and Init Visual Camera
-		switch (gpDev->eCamModel)
-		{
+		switch (gpDev->eCamModel) {
 		case MT9P111:
 			MT9P111_Init(gpDev);
 			break;
@@ -401,8 +384,8 @@ static int VCAM_Open (struct inode *inode, struct file *filp)
 	return 0;
 }
 
-module_init (VCAM_Init);
-module_exit (VCAM_Deinit);
+module_init(VCAM_Init);
+module_exit(VCAM_Deinit);
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Visual Camera Driver");
