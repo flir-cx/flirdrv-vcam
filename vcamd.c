@@ -167,7 +167,7 @@ static struct platform_driver vcam_driver = {
 };
 
 // Code
-static int __init VCAM_Init(void)
+static int VCAM_Init(void)
 {
 	int ret = -EIO;
 
@@ -219,7 +219,7 @@ err_alloc:
 	return ret;
 }
 
-static void __devexit VCAM_Deinit(void)
+static void VCAM_Deinit(void)
 {
 	pr_err("VCAM_Deinit\n");
 

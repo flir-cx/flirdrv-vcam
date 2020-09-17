@@ -264,23 +264,23 @@ void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 		ret = regulator_enable(pInfo->reg_vcm);
 		msleep(20);
 		gpio_direction_output(pInfo->pwdn_gpio, 0);
-		usleep(10000, 20000);
+		usleep_range(10000, 20000);
 		gpio_direction_output(pInfo->reset_gpio, 1);
-		usleep(10000, 20000);
+		usleep_range(10000, 20000);
 		ret = regulator_enable(pInfo->reg_vcm2i2c);
-		usleep(10000, 20000);	//Change vcam2 i2c address from 0x78 to 0x7a
+		usleep_range(10000, 20000);	//Change vcam2 i2c address from 0x78 to 0x7a
 		WriteVcam(pInfo, pInfo->cameraI2CAddress[0], 0x3100,
 			  pInfo->cameraI2CAddress[1]);
 		ret = regulator_enable(pInfo->reg_vcm1i2c);
 	} else {
 		ret = regulator_disable(pInfo->reg_vcm1i2c);
-		usleep(10000, 20000);
+		usleep_range(10000, 20000);
 		ret = regulator_disable(pInfo->reg_vcm2i2c);
-		usleep(10000, 20000);
+		usleep_range(10000, 20000);
 		gpio_direction_output(pInfo->reset_gpio, 0);
-		usleep(10000, 20000);
+		usleep_range(10000, 20000);
 		gpio_direction_output(pInfo->pwdn_gpio, 1);
-		usleep(10000, 20000);
+		usleep_range(10000, 20000);
 		ret = regulator_disable(pInfo->reg_vcm);
 	}
 #endif
