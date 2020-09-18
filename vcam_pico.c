@@ -223,17 +223,17 @@ void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 		SetI2CIoport(pInfo, VCM_PWR_EN, TRUE);
 		msleep(20);
 		SetI2CIoport(pInfo, VCM_CLK_EN, TRUE);
-		usleep_range(10000, 20000);;
+		usleep_range(10000, 20000);
 		SetI2CIoport(pInfo, VCM_RESET, FALSE);
-		usleep_range(10000, 20000);;
+		usleep_range(10000, 20000);
 		SetI2CIoport(pInfo, VCM_I2C_EN, TRUE);
 	} else {
 		SetI2CIoport(pInfo, VCM_I2C_EN, FALSE);
-		usleep_range(10000, 20000);;
+		usleep_range(10000, 20000);
 		SetI2CIoport(pInfo, VCM_RESET, TRUE);
-		usleep_range(10000, 20000);;
+		usleep_range(10000, 20000);
 		SetI2CIoport(pInfo, VCM_CLK_EN, FALSE);
-		usleep_range(10000, 20000);;
+		usleep_range(10000, 20000);
 		SetI2CIoport(pInfo, VCM_PWR_EN, FALSE);
 	}
 }
