@@ -101,6 +101,23 @@ static int OV5640_nightmode_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool
 	return ret;
 }
 
+static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
+{
+	DWORD ret;
+
+	if (enable)
+		ret = OV5640_DoI2CWrite(pInfo,
+					ov5640_mirror_on_reg,
+					dim(ov5640_mirror_on_reg),
+					camera);
+	else
+		ret = OV5640_DoI2CWrite(pInfo,
+				  ov5640_mirror_off_reg,
+				  dim(ov5640_mirror_off_reg),
+				  camera);
+	return ret;
+}
+
 static int OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
 {
 	int ret;
@@ -111,7 +128,6 @@ static int OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool
 		ret = OV5640_DoI2CWrite(pInfo, &autofocus_off, 1, camera);
 	return ret;
 }
-
 
 /*Set vcam exposure value*/
 static void OV5640_set_exposure(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera,
@@ -172,13 +188,10 @@ static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 		if (ret)
 			return ret;
 	}
-	if (pInfo->mirror_image) {
-		ret =
-		  OV5640_DoI2CWrite(pInfo, ov5640_mirror_on_reg, dim(ov5640_mirror_on_reg),
-				 camera);
-		if (ret)
-			return ret;
-	}
+
+	ret = OV5640_mirror_enable(pInfo, camera, pInfo->mirror_image);
+	if (ret)
+		return ret;
 
 	OV5640_enable_stream(pInfo, camera, TRUE);
 	return ret;
@@ -257,13 +270,9 @@ static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
 			return ret;
 	}
 
-	if (pInfo->mirror_image) {
-		ret =
-			DoI2CWrite(pInfo, ov5640_mirror_on_reg, dim(ov5640_mirror_on_reg),
-				 camera);
-		if (ret)
-			return ret;
-	}
+	ret = OV5640_mirror_enable(pInfo, camera, pInfo->mirror_image);
+	if (ret)
+		return ret;
 
 	if (pInfo->edge_enhancement) {
 		ret =
