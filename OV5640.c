@@ -181,15 +181,10 @@ static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 			return ret;
 	}
 
-	if (pInfo->flip_image) {
-		ret =
-		  OV5640_DoI2CWrite(pInfo, ov5640_flip_reg, dim(ov5640_flip_reg),
-				 camera);
-		if (ret)
-			return ret;
-	}
+	// Set default flip
+	ret = OV5640_FlipImage(pInfo, FALSE);
 
-	ret = OV5640_mirror_enable(pInfo, camera, pInfo->mirror_image);
+	ret = OV5640_mirror_enable(pInfo, camera, FALSE);
 	if (ret)
 		return ret;
 
@@ -237,17 +232,35 @@ static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 	return ret;
 }
 
-static DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
+DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 {
 	DWORD dwErr = ERROR_SUCCESS;
 
-	if (flip)
-		dwErr = OV5640_DoI2CWrite(pInfo, ov5640_flip_on_reg, dim(ov5640_flip_on_reg), g_camera);
-	else
-		dwErr = OV5640_DoI2CWrite(pInfo, ov5640_flip_off_reg, dim(ov5640_flip_off_reg), g_camera);
-
-	if (dwErr == ERROR_SUCCESS)
-		pInfo->flip_image = !pInfo->flip_image_hw;
+	if (flip) {
+		if (pInfo->flipped_sensor) {
+			dwErr = OV5640_DoI2CWrite(pInfo,
+						  ov5640_flip_off_reg,
+						  dim(ov5640_flip_off_reg),
+						  g_camera);
+		} else {
+			dwErr = OV5640_DoI2CWrite(pInfo,
+						  ov5640_flip_on_reg,
+						  dim(ov5640_flip_on_reg),
+						  g_camera);
+		}
+	} else {
+		if (pInfo->flipped_sensor) {
+			dwErr = OV5640_DoI2CWrite(pInfo,
+						  ov5640_flip_on_reg,
+						  dim(ov5640_flip_on_reg),
+						  g_camera);
+		} else {
+			dwErr = OV5640_DoI2CWrite(pInfo,
+						  ov5640_flip_off_reg,
+						  dim(ov5640_flip_off_reg),
+						  g_camera);
+		}
+	}
 
 	return dwErr;
 }
@@ -262,15 +275,13 @@ static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
 	if (ret)
 		return ret;
 
-	if (pInfo->flip_image) {
-		ret =
-		    OV5640_DoI2CWrite(pInfo, ov5640_flip_reg, dim(ov5640_flip_reg),
-				 camera);
-		if (ret)
-			return ret;
-	}
+	// Set default flip
+	ret = OV5640_FlipImage(pInfo, FALSE);
+	if (ret)
+		return ret;
 
-	ret = OV5640_mirror_enable(pInfo, camera, pInfo->mirror_image);
+
+	ret = OV5640_mirror_enable(pInfo, camera, FALSE);
 	if (ret)
 		return ret;
 

@@ -25,6 +25,7 @@ struct reg_value {
 };
 BOOL OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 			      struct reg_value *pMode, USHORT elements, CAM_NO camera);
+DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip);
 
 /* Settings from
  * Rocky/Elektronik/Komponenter/datablad/VCam/Settings/

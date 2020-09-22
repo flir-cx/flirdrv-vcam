@@ -73,9 +73,17 @@ static int vcam_probe(struct platform_device *pdev)
 	// initialize this device instance
 	sema_init(&gpDev->semDevice, 1);
 
+	gpDev->flipped_sensor = 0; //Default, set to 0 if property does not exist or is empty
+
 	// Init hardware
 #ifdef CONFIG_OF
 	gpDev->node = of_find_compatible_node(NULL, NULL, "flir,vcam");
+
+	ret = of_property_read_u32(gpDev->node,
+				   "flipped_sensor", &gpDev->flipped_sensor);
+	if (ret)
+		pr_err("vcam: missing statement flipped_sensor\n");
+
 	if (of_machine_is_compatible("fsl,imx6dl-ec101") ||
 	    of_machine_is_compatible("fsl,imx6dl-ec501"))
 		ret = EvcoInitHW(gpDev);
