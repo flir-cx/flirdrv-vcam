@@ -184,7 +184,7 @@ static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 	// Set default flip
 	ret = OV5640_FlipImage(pInfo, FALSE);
 
-	ret = OV5640_mirror_enable(pInfo, camera, FALSE);
+	ret = OV5640_mirror_enable(pInfo, camera, pInfo->flipped_sensor);
 	if (ret)
 		return ret;
 
@@ -281,7 +281,7 @@ static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
 		return ret;
 
 
-	ret = OV5640_mirror_enable(pInfo, camera, FALSE);
+	ret = OV5640_mirror_enable(pInfo, camera, pInfo->flipped_sensor);
 	if (ret)
 		return ret;
 

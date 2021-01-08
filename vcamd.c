@@ -79,10 +79,9 @@ static int vcam_probe(struct platform_device *pdev)
 #ifdef CONFIG_OF
 	gpDev->node = of_find_compatible_node(NULL, NULL, "flir,vcam");
 
-	ret = of_property_read_u32(gpDev->node,
-				   "flipped_sensor", &gpDev->flipped_sensor);
-	if (ret)
-		pr_err("vcam: missing statement flipped_sensor\n");
+        if (of_find_property(gpDev->node, "flip-image", NULL))
+		gpDev->flipped_sensor = 1;
+        pr_info("vcam: flipped_sensor:%d\n", 	gpDev->flipped_sensor);
 
 	if (of_machine_is_compatible("fsl,imx6dl-ec101") ||
 	    of_machine_is_compatible("fsl,imx6dl-ec501"))
