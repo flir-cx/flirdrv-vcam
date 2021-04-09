@@ -88,13 +88,14 @@ static int vcam_probe(struct platform_device *pdev)
 		ret = EvcoInitHW(gpDev);
 	else
 #endif
-	if (cpu_is_mx51())
-		ret = PicoInitHW(gpDev);
-	else if (cpu_is_imx6s())
-		ret = NecoInitHW(gpDev);
-	else if (cpu_is_imx6q())
-		ret = RocoInitHW(gpDev);
-	else {
+	/* if (cpu_is_mx51()) */
+	/* 	ret = PicoInitHW(gpDev); */
+	/* else if (cpu_is_imx6s()) */
+	/* 	ret = NecoInitHW(gpDev); */
+	/* else if (cpu_is_imx6q()) */
+	/* 	ret = RocoInitHW(gpDev); */
+	/* else */
+	{
 		pr_err("VCAM: Error: Unknown Hardware\n");
 		ret = 0;
 	}
@@ -258,11 +259,11 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_FLIP_ON:
 	case IOCTL_CAM_FLIP_OFF:
 		switch (pInfo->eCamModel) {
-		case MT9P111:
-			return MT9P111_IOControl(pInfo, Ioctl, pBuf, pUserBuf);
+		/* case MT9P111: */
+		/* 	return MT9P111_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
 
-		case OV7740:
-			return OV7740_IOControl(pInfo, Ioctl, pBuf, pUserBuf);
+		/* case OV7740: */
+		/* 	return OV7740_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
 
 		case OV5640:
 			return OV5640_IOControl(pInfo, Ioctl, pBuf, pUserBuf);
@@ -371,13 +372,13 @@ static int VCAM_Open(struct inode *inode, struct file *filp)
 	if (!init) {
 		// Detect and Init Visual Camera
 		switch (gpDev->eCamModel) {
-		case MT9P111:
-			MT9P111_Init(gpDev);
-			break;
+		/* case MT9P111: */
+		/* 	MT9P111_Init(gpDev); */
+		/* 	break; */
 
-		case OV7740:
-			OV7740_Init(gpDev);
-			break;
+		/* case OV7740: */
+		/* 	OV7740_Init(gpDev); */
+		/* 	break; */
 
 		case OV5640:
 			OV5640_Init(gpDev);

@@ -20,13 +20,15 @@ EXTRA_CFLAGS = -I$(ALPHAREL)/SDK/FLIR/Include $(DEBUG) $(ERROR)
 
 obj-m := vcam.o
 vcam-objs += vcamd.o
-vcam-objs += MT9P111.o
-vcam-objs += OV7740.o
-vcam-objs += OV5640.o
-vcam-objs += vcam_pico.o
-vcam-objs += vcam_neco.o
-vcam-objs += vcam_roco.o
-vcam-objs += vcam_evco.o
+# vcam-objs += MT9P111.o
+# vcam-objs += OV7740.o
+# vcam-objs += vcam_pico.o
+# vcam-objs += vcam_neco.o
+# vcam-objs += vcam_roco.o
+
+#ifdef CONFIG_OF
+vcam-objs += vcam_evco.o OV5640.o
+#endif
 
 SRC := $(shell pwd)
 
