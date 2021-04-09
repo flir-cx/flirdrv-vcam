@@ -22,7 +22,7 @@
 #include <linux/i2c.h>
 #include <linux/version.h>
 #include <linux/uaccess.h>
-#include <linux/miscdevice.h>
+/* #include <linux/miscdevice.h> */
 
 #ifdef CONFIG_OF
 #include <linux/of_gpio.h>
@@ -54,21 +54,21 @@ static const struct file_operations vcam_fops = {
 	.open = VCAM_Open,
 };
 
-static struct miscdevice vcam_miscdev = {
-	.minor = MISC_DYNAMIC_MINOR,
-	.name = "vcam0",
-	.fops = &vcam_fops
-};
+/* static struct miscdevice vcam_miscdev = { */
+/* 	.minor = MISC_DYNAMIC_MINOR, */
+/* 	.name = "vcam0", */
+/* 	.fops = &vcam_fops */
+/* }; */
 
 static int vcam_probe(struct platform_device *pdev)
 {
 	int ret;
 
-	ret = misc_register(&vcam_miscdev);
-	if (ret) {
-		pr_err("Failed to register miscdev for VCAM driver\n");
-		return ret;
-	}
+	/* ret = misc_register(&vcam_miscdev); */
+	/* if (ret) { */
+	/* 	pr_err("Failed to register miscdev for VCAM driver\n"); */
+	/* 	return ret; */
+	/* } */
 
 	// initialize this device instance
 	sema_init(&gpDev->semDevice, 1);
@@ -109,7 +109,7 @@ static int vcam_probe(struct platform_device *pdev)
 static int vcam_remove(struct platform_device *pdev)
 {
 	pr_info("Removing VCAM driver\n");
-	misc_deregister(&vcam_miscdev);
+	/* misc_deregister(&vcam_miscdev); */
 
 	// make sure this is a valid context
 	// if the device is running, stop it
