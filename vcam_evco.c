@@ -15,12 +15,10 @@
 #include <linux/leds.h>
 #include <linux/platform_device.h>
 
-#ifdef CONFIG_OF
 #include <linux/of_gpio.h>
 #include <linux/of.h>
 #include <linux/regulator/consumer.h>
 #include <linux/regulator/of_regulator.h>
-#endif
 
 // Definitions
 
@@ -33,13 +31,6 @@ static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
 			   VCAMIOCTLFLASH *pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend);
-
-#ifdef CONFIG_OF
-static int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int *ppin, char *of_name,
-			  int value);
-static int requestRegulator(PCAM_HW_INDEP_INFO pInfo, struct regulator **reg,
-			    char *of_name, int enable);
-#endif
 
 //-----------------------------------------------------------------------------
 //
@@ -56,7 +47,10 @@ static int requestRegulator(PCAM_HW_INDEP_INFO pInfo, struct regulator **reg,
 
 DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 {
-	BOOL ret = TRUE;
+	int ret;
+
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
 
 	pInfo->hI2C = i2c_get_adapter(2);
 	pInfo->eCamModel = OV5640;
@@ -67,73 +61,60 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 	pInfo->cameraI2CAddress[0] = 0x78;
 	pInfo->edge_enhancement = 1;
 
-#ifdef CONFIG_OF
-
-	ret = requestGPIOpin(pInfo, &pInfo->reset_gpio, "vcam_reset-gpio", 0);
-	if (!ret)
-		ret = requestRegulator(pInfo, &pInfo->reg_vcm, "VCM_DOVDD", 0);
-	if (!ret)
-		ret =
-		    requestGPIOpin(pInfo, &pInfo->pwdn_gpio, "vcam_pwdn-gpio",
-				   1);
-	if (!ret)
-		ret =
-		    requestGPIOpin(pInfo, &pInfo->clk_en_gpio,
-				   "vcam_clk_en-gpio", 1);
-	if (!ret)
-		EnablePower(pInfo, TRUE);
-
-#endif
-	return TRUE;
-}
-
-#ifdef CONFIG_OF
-int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int *ppin, char *of_name,
-		   int value)
-{
-	int pin, retval = -1;
-
-	pin = of_get_named_gpio_flags(pInfo->node, of_name, 0, NULL);
-	if (gpio_is_valid(pin) == 0) {
-		pr_err("VCAM: %s  can not be used\n", of_name);
-	} else {
-		*ppin = pin;
-		retval = gpio_request(pin, of_name);
-		if (retval)
-			pr_err("VCAM: Fail registering %s", of_name);
-
-		retval = gpio_direction_output(pin, value);
-		if (retval)
-			pr_err("VCAM: Fail setting direction for %s", of_name);
-
+	pInfo->reset_gpio = of_get_named_gpio_flags(pInfo->node, "vcam_reset-gpio", 0, NULL);
+	ret = gpio_request_one(pInfo->reset_gpio, GPIOF_OUT_INIT_LOW, "vcam_reset-gpio");
+	if (ret) {
+		dev_err(dev, "Failed registering pin vcam_reset-gpio (err %i)\n", ret);
+		return -EIO;
 	}
-	return retval;
-
-}
-
-int requestRegulator(PCAM_HW_INDEP_INFO pInfo, struct regulator **reg,
-		     char *of_name, int enable)
-{
-	int retval = -1;
-	*reg = regulator_get(&pInfo->pLinuxDevice->dev, of_name);
-	if (IS_ERR(*reg)) {
-		pr_err("VCAM: Error on %s get\n", of_name);
-	} else {
-		retval = 0;
-		if (enable)
-			retval = regulator_enable(*reg);
-		else if (regulator_is_enabled(*reg))
-			retval = regulator_disable(*reg);
-
-		if (retval) {
-			pr_err("VCAM: Could not %s %s regulator\n",
-			       enable ? "enable" : "disable", of_name);
-		}
+	else {
+		dev_info(dev, "Registered vcam_reset-gpio\n");
 	}
 
-	return retval;
+	pInfo->reg_vcm = regulator_get(&pInfo->pLinuxDevice->dev, "VCM_DOVDD");
+	if (IS_ERR(pInfo->reg_vcm)) {
+		dev_err(dev, "VCAM: Error on %s get\n", "VCM_DOVDD");
+		gpio_free(pInfo->reset_gpio);
+		return -EIO;
+	}
+
+	pInfo->pwdn_gpio = of_get_named_gpio_flags(pInfo->node, "vcam_pwdn-gpio", 0, NULL);
+	ret = gpio_request_one(pInfo->pwdn_gpio, GPIOF_OUT_INIT_HIGH, "vcam_pwdn-gpio");
+	if (ret) {
+		dev_err(dev, "Failed registering pin vcam_pwdn_gpio (err %i)\n", ret);
+		gpio_free(pInfo->reset_gpio);
+		return -EIO;
+	}
+	else {
+		dev_err(dev, "Registered vcam_pwdn_gpio\n");
+	}
+
+	pInfo->clk_en_gpio = of_get_named_gpio_flags(pInfo->node, "vcam_clk_en-gpio", 0, NULL);
+	ret = gpio_request_one(pInfo->clk_en_gpio, GPIOF_OUT_INIT_HIGH, "vcam_clk_en-gpio");
+	if (ret) {
+		dev_err(dev, "Failed registering pin vcam_clk_en-gpio (err %i)\n", ret);
+		gpio_free(pInfo->reset_gpio);
+		gpio_free(pInfo->pwdn_gpio);
+		return -EIO;
+	}
+	else {
+		dev_err(dev, "Registered vcam_clk_en-gpio\n");
+	}
+	EnablePower(pInfo, TRUE);
+
+	return ret;
 }
-#endif
+
+DWORD EvcoDeInitHW(PCAM_HW_INDEP_INFO pInfo)
+{
+	EnablePower(pInfo, FALSE);
+	gpio_free(pInfo->clk_en_gpio);
+	gpio_free(pInfo->pwdn_gpio);
+	regulator_put(pInfo->reg_vcm);
+	gpio_free(pInfo->reset_gpio);
+	i2c_put_adapter(pInfo->hI2C);
+	return 0;
+}
 
 //-----------------------------------------------------------------------------
 //
@@ -179,13 +160,15 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	int ret;
 	struct led_classdev *led = FindTorch();
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
 
 	if (led) {
 		pFlashData->bTorchOn = (led->brightness) ? TRUE : FALSE;
 		ret = ERROR_SUCCESS;
 	} else {
 		pFlashData->bTorchOn = FALSE;
-		pr_err_once("Failed to find LED Torch\n");
+		dev_err_once(dev, "Failed to find LED Torch\n");
 		//Here we want to return ERROR_INVALID_HANDLE, but due to appcore and webapplications, we need
 		//this to succeed, until underlying software is able to handle fails here!
 		// ret = ERROR_INVALID_HANDLE;
@@ -211,6 +194,8 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	int ret;
 	struct led_classdev *led = FindTorch();
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
 
 	if (led) {
 		led->brightness =
@@ -218,8 +203,7 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 		led->brightness_set(led, led->brightness);
 		ret = ERROR_SUCCESS;
 	} else {
-
-		pr_err_once("Failed to find LED Flash\n");
+		dev_err_once(dev, "Failed to find LED Flash\n");
 		//Here we want to return ERROR_INVALID_HANDLE, but due to appcore and webapplications, we need
 		//this to succeed, until underlying software is able to handle fails here!
 		// ret = ERROR_INVALID_HANDLE;
@@ -243,7 +227,7 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 {
 	int ret = 0;
-#ifdef CONFIG_OF
+
 	if (bEnable) {
 		ret = regulator_enable(pInfo->reg_vcm);
 		msleep(20);
@@ -259,7 +243,6 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 		usleep_range(10000, 20000);
 		ret = regulator_disable(pInfo->reg_vcm);
 	}
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -275,13 +258,10 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 //-----------------------------------------------------------------------------
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
 {
-#ifdef CONFIG_OF
 	if (bSuspend) {
 		EnablePower(pInfo, false);
 	} else {
 		EnablePower(pInfo, true);
 		OV5640_reinit(pInfo);
 	}
-
-#endif
 }

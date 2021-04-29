@@ -18,6 +18,7 @@
 #include "flir_kernel_os.h"
 #include "vcam_internal.h"
 #include "i2cdev.h"
+#include <linux/platform_device.h>
 #include <linux/i2c.h>
 #include "OV5640.h"
 
@@ -25,6 +26,8 @@ BOOL OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 		       struct reg_value *pMode, USHORT elements, CAM_NO camera)
 {
 	struct i2c_msg msgs[1];
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
 	int i, retval = 0;
 	int retries = 50;
 	DWORD cam;
@@ -55,10 +58,7 @@ BOOL OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 
 			if (retval <= 0) {
 				if (retries-- <= 0) {
-					pr_err
-						("VCAM: %s failing on element %d of %d\n",
-						 __func__,
-						 i, elements);
+					dev_err(dev, "failing on element %d of %d\n", i, elements);
 					return ERROR_NOT_SUPPORTED;	// Too many errors, give up
 				}
 				usleep_range(10000, 20000);
@@ -151,42 +151,50 @@ static void OV5640_set_exposure(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera,
 
 static void nightmode_on_off_work(struct work_struct *work)
 {
-	CAM_HW_INDEP_INFO *pInfo =
-	    container_of(work, CAM_HW_INDEP_INFO, nightmode_work);
+	CAM_HW_INDEP_INFO *pInfo = container_of(work, CAM_HW_INDEP_INFO, nightmode_work);
 
-	// pr_err("VCAM turning nightmode off and on\n");
 	msleep(1000);
 	OV5640_nightmode_enable(pInfo, pInfo->cam, FALSE);
 	msleep(1000);
 	OV5640_nightmode_enable(pInfo, pInfo->cam, TRUE);
-
 }
 
 static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 {
 	int ret;
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
 
 	OV5640_enable_stream(pInfo, camera, FALSE);
-	ret =
-	    OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
-		       dim(ov5640_init_setting_9fps_5MP), camera);
-	if (ret)
+	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
+				dim(ov5640_init_setting_9fps_5MP), camera);
+	if (ret) {
+		dev_err(dev, "Failed to call OV5640_DoI2CWrite\n");
 		return ret;
+	}
 
 	if (pInfo->edge_enhancement) {
 		ret =
 		    OV5640_DoI2CWrite(pInfo, ov5640_edge_enhancement,
 			       dim(ov5640_edge_enhancement), camera);
-		if (ret)
+		if (ret) {
+			dev_err(dev, "Failed to call OV5640_DoI2CWrite\n");
 			return ret;
+		}
 	}
 
 	// Set default flip
 	ret = OV5640_FlipImage(pInfo, FALSE);
+	if (ret) {
+		dev_err(dev, "Failed to call OV5640_FlipImage\n");
+		return ret;
+	}
 
 	ret = OV5640_mirror_enable(pInfo, camera, pInfo->flipped_sensor);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "Failed to call OV5640_mirror_enable\n");
 		return ret;
+	}
 
 	OV5640_enable_stream(pInfo, camera, TRUE);
 	return ret;
@@ -195,6 +203,8 @@ static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 {
 	int ret;
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
 
 	OV5640_enable_stream(pInfo, camera, FALSE);
 
@@ -221,7 +231,7 @@ static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 		break;
 
 	default:
-		pr_err("VCAM: Unsupported fov: %d\n", fov);
+		dev_err(dev, "VCAM: Unsupported fov: %d\n", fov);
 		ret = ERROR_NOT_SUPPORTED;
 	}
 
@@ -269,33 +279,45 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
 {
 	BOOL ret = ERROR_SUCCESS;
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
+
+	dev_info(dev, "initCamera\n");
 
 	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
 				dim(ov5640_init_setting_9fps_5MP), camera);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "Failed to call OV5640_DoI2CWrite\n");
 		return ret;
+	}
 
 	// Set default flip
 	ret = OV5640_FlipImage(pInfo, FALSE);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "Failed in call OV5640_FlipImage\n");
 		return ret;
-
+	}
 
 	ret = OV5640_mirror_enable(pInfo, camera, pInfo->flipped_sensor);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "Failed in call OV5640_mirror_enable\n");
 		return ret;
+	}
 
 	if (pInfo->edge_enhancement) {
-		ret =
-			OV5640_DoI2CWrite(pInfo, ov5640_edge_enhancement,
-				   dim(ov5640_edge_enhancement), camera);
-		if (ret)
+		ret = OV5640_DoI2CWrite(pInfo, ov5640_edge_enhancement,
+					dim(ov5640_edge_enhancement), camera);
+		if (ret) {
+			dev_err(dev, "Failed in call OV5640_DoI2CWrite..\n");
 			return ret;
+		}
 	}
 
 	ret = OV5640_set_fov(pInfo, camera, 54);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "Failed in call OV5640_set_fov\n");
 		return ret;
+	}
 
 	return ret;
 }
@@ -306,7 +328,6 @@ BOOL OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
 		return FALSE;
 
 	OV5640_set_5MP(pInfo, g_camera);
-
 	OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
 
 	return TRUE;
@@ -328,6 +349,8 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 {
 	DWORD dwErr = ERROR_INVALID_PARAMETER;
 	static BOOL bTestActive;
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
 
 	switch (Ioctl) {
 	case IOCTL_CAM_GET_TEST:
@@ -377,8 +400,8 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 
 			if (res) {
 				bCamActive[cam] = bNewActive;
-				pr_err("bCamActive for cam %d now %d\n", cam,
-				       bCamActive[cam]);
+				dev_err(dev, "bCamActive for cam %d now %d\n", cam,
+					bCamActive[cam]);
 				dwErr = ERROR_SUCCESS;
 			}
 			UNLOCK(pInfo);
@@ -424,8 +447,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			case VCAM_UNDEFINED:
 			case VCAM_RESET:
 			default:
-				pr_err
-				    ("VCAM Unsupported IOCTL_CAM_SET_CAMMODE %d\n",
+				dev_err(dev, "VCAM Unsupported IOCTL_CAM_SET_CAMMODE %d\n",
 				     pMode->eCamMode);
 				break;
 			}
@@ -466,7 +488,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 		UNLOCK(pInfo);
 		break;
 	default:
-		pr_err("VCAM Unsupported IOCTL code %lu\n", Ioctl);
+		dev_err(dev, "VCAM Unsupported IOCTL code %lu\n", Ioctl);
 		dwErr = ERROR_NOT_SUPPORTED;
 		break;
 	}
