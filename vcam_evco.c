@@ -135,7 +135,8 @@ struct led_classdev *FindTorch(void)
 	struct led_classdev *led_cdev, *led = NULL;
 	down_read(&leds_list_lock);
 	list_for_each_entry(led_cdev, &leds_list, node) {
-		if (strcmp(led_cdev->name, "torch") == 0) {
+	        if (led_cdev && led_cdev->name &&
+		    strcmp(led_cdev->name, "torch") == 0) {
 			led = led_cdev;
 			break;
 		}
