@@ -119,7 +119,8 @@ static int vcam_probe(struct platform_device *pdev)
 #ifdef CONFIG_OF
 	}
 #endif
-	if (ret)  
+
+	if (ret)
 		dev_err(dev, "failed to init hardware!\n");
 
 	return ret;

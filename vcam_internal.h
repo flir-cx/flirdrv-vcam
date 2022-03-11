@@ -25,11 +25,17 @@
 
 #define	dim(x)			(sizeof(x) / sizeof(x[0]))
 
+enum sensor_model {
+	OV5640_STANDARD,
+	OV5640_HIGH_K
+};
+
 // this structure keeps track of the device instance
 typedef struct __CAM_HW_INDEP_INFO {
 	struct platform_device *pLinuxDevice;
 	struct semaphore semDevice;	// serialize access to this device's state
 	VCAM_CamModel eCamModel;	// type/model of visual camera module
+	enum sensor_model sensor_model[2];
 	struct
 	i2c_adapter * hI2C;
 	struct led_classdev *torch_cdev;

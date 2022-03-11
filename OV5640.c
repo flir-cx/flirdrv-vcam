@@ -22,6 +22,274 @@
 #include <linux/i2c.h>
 #include "OV5640.h"
 
+static s32 ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val, CAM_NO cam)
+{
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
+	u8 buf[3] = { 0 };
+	int i, retries = 50;
+	struct i2c_msg msgs[1];
+	int retval;
+
+	buf[0] = reg >> 8;
+	buf[1] = reg & 0xff;
+	buf[2] = val;
+
+	msgs[0].addr = pInfo->cameraI2CAddress[cam] >> 1;
+	msgs[0].flags = I2C_M_TEN;
+	msgs[0].buf = buf;
+	msgs[0].len = 3;
+
+	for (i = 0; i < retries; ++i) {
+		retval = i2c_transfer(pInfo->hI2C, msgs, 1);
+		if (retval <= 0) {
+			dev_err(dev, "i2c_transfer() failed, try no. %d\n", i);
+			usleep_range(10000, 20000);
+		} else {
+			break;
+		}
+	}
+
+	if (retval <= 0) {
+		return ERROR_NOT_SUPPORTED;
+	}
+
+	return 0;
+}
+
+static s32 ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val, CAM_NO cam)
+{
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
+	u8 buf[2] = {0};
+	struct i2c_msg msgs[1];
+	int i, retval, retries = 50;
+
+	msgs[0].addr = pInfo->cameraI2CAddress[cam] >> 1;
+	msgs[0].flags = I2C_M_TEN;
+	msgs[0].len = 2;
+	msgs[0].buf = buf;
+
+	/* register to read */
+	buf[0] = reg >> 8;
+	buf[1] = reg & 0xff;
+
+	for (i = 0; i < retries; ++i) {
+		retval = i2c_transfer(pInfo->hI2C, msgs, 1);
+		if (retval <= 0) {
+			dev_err(dev, "i2c_transfer() failed, try %d\n", i);
+			usleep_range(10000, 20000);
+		} else {
+			break;
+		}
+	}
+
+	if (retval <= 0) {
+		return ERROR_NOT_SUPPORTED;
+	}
+
+	/* Send in master receive mode. */
+	msgs[0].flags |= I2C_M_RD; /* see i2c_master_recv() */
+	msgs[0].len = 1;
+	msgs[0].buf = val;
+
+	for (i = 0; i < retries; ++i) {
+		retval = i2c_transfer(pInfo->hI2C, msgs, 1);
+		if (retval <= 0) {
+			dev_err(dev, "i2c_transfer() failed, try %d\n", i);
+			usleep_range(10000, 20000);
+		} else {
+			break;
+		}
+	}
+
+	if (retval <= 0) {
+		return ERROR_NOT_SUPPORTED;
+	}
+
+	return 0;
+}
+
+static s32 ov5640_mod_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 mask, u8 val, CAM_NO cam)
+{
+	u8 readval;
+	s32 ret;
+
+	ret = ov5640_read_reg(pInfo, reg, &readval, cam);
+	if (ret) {
+		return ret;
+	}
+
+	readval &= ~mask;
+	val &= mask;
+	val |= readval;
+
+	return ov5640_write_reg(pInfo, reg, val, cam);
+}
+
+static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory, int n, CAM_NO cam)
+{
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
+	int retval;
+	int i;
+
+	/* Enable OTP block and OPT clock */
+	retval = ov5640_mod_reg(pInfo, OV5640_SYSTEM_RESET00, BIT(4), 0, cam);
+	if (retval < 0) {
+		dev_err(dev, "ov5640: failed to enable OTP module\n");
+		return -1;
+	}
+
+	retval = ov5640_mod_reg(pInfo, OV5640_CLOCK_ENABLE00, BIT(4), BIT(4), cam);
+	if (retval < 0) {
+		dev_err(dev, "ov5640: failed to enable OTP clock\n");
+		return -1;
+	}
+
+	/* According to OTP read example in datasheet */
+	retval = ov5640_write_reg(pInfo, OV5640_OTP_PROGRAM_CTRL, 0, cam);
+	if (retval < 0) {
+		dev_err(dev, "ov5640: failed to disable OTP programming\n");
+		return -1;
+	}
+
+	retval = ov5640_write_reg(pInfo, OV5640_OTP_READ_CTRL,  0, cam);
+	if (retval < 0) {
+		dev_err(dev, "ov5640: failed to disable OTP read\n");
+		return -1;
+	}
+
+	retval = ov5640_write_reg(pInfo, OV5640_OTP_READ_CTRL,  1, cam);
+	if (retval < 0) {
+		dev_err(dev, "ov5640: failed to enable OTP read\n");
+		return -1;
+	}
+
+	/* delay 1ms according to datasheet*/
+	msleep(1);
+	for (i = 0; i < n && retval >= 0; i++) {
+		retval = ov5640_read_reg(pInfo, OV5640_OTP_START_ADDR + i, &otp_memory[i], cam);
+		dev_dbg(dev, "otp[0x%x] 0x%x %c\n", OV5640_OTP_START_ADDR + i, otp_memory[i], otp_memory[i]);
+	}
+
+	if (retval < 0) {
+		dev_err(dev, "ov5640_read_reg() failed\n");
+		return -1;
+	}
+
+	/* delay 10ms according to datasheet*/
+	msleep(10);
+	retval = ov5640_write_reg(pInfo, OV5640_OTP_READ_CTRL,  0, cam);
+	if (retval < 0) {
+		dev_err(dev, "ov5640: failed to disable OTP read\n");
+		return -1;
+	}
+
+	/* Disable OTP block and OPT clock. Letting the block and
+	 * clock enabled can cause the sensor to fail to start
+	 * streaming frames. */
+	retval = ov5640_mod_reg(pInfo, OV5640_SYSTEM_RESET00, BIT(4), BIT(4), cam);
+	if (retval < 0) {
+		pr_err("ov5640: failed to disable OTP module\n");
+		return -1;
+	}
+
+	retval = ov5640_mod_reg(pInfo, OV5640_CLOCK_ENABLE00, BIT(4), 0, cam);
+	if (retval < 0) {
+		pr_err("ov5640: failed to disable OTP clock\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int ov5640_get_sensor_models(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
+{
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
+	u8 otp_memory[OV5640_OTP_END_ADDR - OV5640_OTP_START_ADDR + 1];
+	DWORD cam;
+	DWORD cam_first = (camera == CAM_2) ? CAM_2 : CAM_1;
+	DWORD cam_last = (camera == CAM_1) ? CAM_1 : CAM_2;
+	int ret = 0;
+
+	for (cam = cam_first; cam <= cam_last; cam++) {
+		/* Read content in OTP memory */
+		ret = ov5640_get_otp_memory(pInfo, otp_memory, OV5640_OTP_END_ADDR - OV5640_OTP_START_ADDR + 1, cam);
+		if (ret) {
+			dev_err(dev, "ov5640_get_otp_memory() failed\n");
+			continue;
+		}
+
+		/* The sensor model can be determined by the content of the
+		 * OTP memory. There are two ways the memory can be programmed
+		 * from the vendor. The memory can either contain a string
+		 * specifying the model or a specific register can contain an
+		 * integer value. */
+
+		/* Test if sensor is programmed with a string specifying model */
+		if (strncmp(otp_memory, OV5640_SENSOR_MODEL_HIGH_K, strlen(OV5640_SENSOR_MODEL_HIGH_K)) == 0) {
+			dev_err(dev, "ov5640: Sensor model id: \"%s\" (High K)\n", OV5640_SENSOR_MODEL_HIGH_K);
+			pInfo->sensor_model[cam] = OV5640_HIGH_K;
+			continue;
+		}
+
+		/* Test if sensor is programmed with a sensor id integer */
+		if (otp_memory[OV5640_SENSOR_MODEL_ID_ADDR - OV5640_OTP_START_ADDR] == OV5640_SENSOR_MODEL_HIGH_K_ID) {
+			dev_err(dev, "ov5640: Sensor model id: High K\n");
+			pInfo->sensor_model[cam] = OV5640_HIGH_K;
+			continue;
+		}
+
+		/* Assume the sensor is a standard model */
+		dev_info(dev, "ov5640: Standard sensor model\n");
+		pInfo->sensor_model[cam] = OV5640_STANDARD;
+	}
+
+	return ret;
+}
+
+static int ov5640_get_sensor_model_conf(PCAM_HW_INDEP_INFO pInfo, struct reg_value **value, CAM_NO camera)
+{
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
+	int ret;
+
+	*value = NULL;
+	if (pInfo->sensor_model[camera] == OV5640_HIGH_K) {
+		*value = ov5640_setting_High_K;
+	}
+
+	return 0;
+}
+
+static int ov5640_set_sensor_model_conf(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
+{
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
+	DWORD cam;
+	DWORD cam_first = (camera == CAM_2) ? CAM_2 : CAM_1;
+	DWORD cam_last = (camera == CAM_1) ? CAM_1 : CAM_2;
+	struct reg_value *pModeSetting = NULL;
+	int ret = 0;
+
+	for (cam = cam_first; cam <= cam_last; cam++) {
+		ov5640_get_sensor_model_conf(pInfo, &pModeSetting, cam);
+		if (pModeSetting == NULL) {
+			continue;
+		}
+
+		ret = OV5640_DoI2CWrite(pInfo, pModeSetting, dim(pModeSetting), cam);
+		if (ret) {
+			dev_err(dev, "OV5640_DoI2CWrite() failed for camera %lu\n", cam);
+			continue;
+		}
+	}
+
+	return ret;
+}
+
 BOOL OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 		       struct reg_value *pMode, USHORT elements, CAM_NO camera)
 {
@@ -173,6 +441,9 @@ static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 		return ret;
 	}
 
+	/* Write model specific configuration */
+	ov5640_set_sensor_model_conf(pInfo, camera);
+
 	if (pInfo->edge_enhancement) {
 		ret =
 		    OV5640_DoI2CWrite(pInfo, ov5640_edge_enhancement,
@@ -275,7 +546,6 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 	return dwErr;
 }
 
-
 static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
 {
 	BOOL ret = ERROR_SUCCESS;
@@ -284,12 +554,21 @@ static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
 
 	dev_info(dev, "initCamera\n");
 
+	/* Read the OTP memory before the initial configuration. This
+	 * is the only time the otp memory is read. If read after the
+	 * initial settings configuration is loaded the sensor can
+	 * fail to start to stream frames. */
+	ov5640_get_sensor_models(pInfo, camera);
+
 	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
 				dim(ov5640_init_setting_9fps_5MP), camera);
 	if (ret) {
 		dev_err(dev, "Failed to call OV5640_DoI2CWrite\n");
 		return ret;
 	}
+
+	/* Write model specific configuration */
+	ov5640_set_sensor_model_conf(pInfo, camera);
 
 	// Set default flip
 	ret = OV5640_FlipImage(pInfo, FALSE);
@@ -339,7 +618,9 @@ BOOL OV5640_Init(PCAM_HW_INDEP_INFO pInfo)
 
 	if (pInfo->cameraI2CAddress[1] == 0)	//Only 1 active camera
 		g_camera = CAM_1;
+
 	initCamera(pInfo, TRUE, g_camera);
+
 	init = 1;
 	return TRUE;
 }
