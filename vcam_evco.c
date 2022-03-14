@@ -169,7 +169,11 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 		ret = ERROR_SUCCESS;
 	} else {
 		pFlashData->bTorchOn = FALSE;
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,19,0)
+		pr_err_once("Failed to find LED Torch\n");
+#else
 		dev_err_once(dev, "Failed to find LED Torch\n");
+#endif 		
 		//Here we want to return ERROR_INVALID_HANDLE, but due to appcore and webapplications, we need
 		//this to succeed, until underlying software is able to handle fails here!
 		// ret = ERROR_INVALID_HANDLE;
@@ -204,7 +208,12 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 		led->brightness_set(led, led->brightness);
 		ret = ERROR_SUCCESS;
 	} else {
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,19,0)
+		pr_err_once("Failed to find LED Torch\n");
+#else
 		dev_err_once(dev, "Failed to find LED Flash\n");
+#endif
+
 		//Here we want to return ERROR_INVALID_HANDLE, but due to appcore and webapplications, we need
 		//this to succeed, until underlying software is able to handle fails here!
 		// ret = ERROR_INVALID_HANDLE;

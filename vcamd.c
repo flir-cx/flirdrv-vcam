@@ -110,14 +110,16 @@ static int vcam_probe(struct platform_device *pdev)
 	/* 	ret = PicoInitHW(gpDev); */
 	/* else if (cpu_is_imx6s()) */
 	/* 	ret = NecoInitHW(gpDev); */
-	/* else if (cpu_is_imx6q()) */
-	/* 	ret = RocoInitHW(gpDev); */
-	/* else { */
-		dev_err(dev, "VCAM: Error: Unknown Hardware\n");
-		ret = 0;
+		if (cpu_is_imx6q()) {
+			ret = RocoInitHW(gpDev);
+		} else {
+			dev_err(dev, "VCAM: Error: Unknown Hardware\n");
+			ret = 0;
+		}
+#ifdef CONFIG_OF
 	}
-
-	if (ret)
+#endif
+	if (ret)  
 		dev_err(dev, "failed to init hardware!\n");
 
 	return ret;

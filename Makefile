@@ -24,7 +24,7 @@ vcam-objs += vcamd.o
 # vcam-objs += OV7740.o
 # vcam-objs += vcam_pico.o
 # vcam-objs += vcam_neco.o
-# vcam-objs += vcam_roco.o
+vcam-objs += vcam_roco.o
 
 #ifdef CONFIG_OF
 vcam-objs += vcam_evco.o OV5640.o
