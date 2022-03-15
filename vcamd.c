@@ -159,8 +159,7 @@ static int vcam_suspend(struct platform_device *pdev, pm_message_t state)
 
 static void vcam_shutdown(struct platform_device *pdev)
 {
-	if (gpDev->pSuspend)
-		gpDev->pSuspend(gpDev, TRUE);
+	vcam_remove(pdev);
 }
 
 static int vcam_resume(struct platform_device *pdev)
