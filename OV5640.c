@@ -1,16 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 /***********************************************************************
  *
  * Project: Balthazar
- * $Date: 2013/10/04 $
- * $Author: pfitger $
- *
- * $Id: //depot/Balthazar/Camera/OS/Experimental/linux/drivers/vcam/MT9P111.c#1 $
  *
  * Description of file:
  *   Visual Camera Driver
- *
- * Last check-in changelist:
- * $Change: 179282 $
  *
  * Copyright: FLIR Systems AB
  ***********************************************************************/

@@ -1,16 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 /***********************************************************************
  *
  * Project: Balthazar
- * $Date: 2013/10/04 $
- * $Author: pfitger $
- *
- * $Id: //depot/Balthazar/Camera/OS/Experimental/linux/drivers/vcam/vcam_internal.h#1 $
  *
  * Description of file:
  *   Visual Camera Driver Header file
- *
- * Last check-in changelist:
- * $Change: 179282 $
  *
  * Copyright: FLIR Systems AB
  ***********************************************************************/

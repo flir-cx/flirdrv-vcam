@@ -1,16 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 /***********************************************************************
  *
  * Project: Balthazar
- * $Date: 2013/05/06 $
- * $Author: fhammars $
- *
- * $Id: //depot/Balthazar/Camera/OS/main/WINCE600/PLATFORM/COMMON/SRC/FLIR/VCAM/OV7740.c#4 $
  *
  * Description of file:
  *   Visual Camera Driver for OV7740 (Astra)
- *
- * Last check-in changelist:
- * $Change: 172358 $
  *
  * Copyright: FLIR Systems AB
  ***********************************************************************/
