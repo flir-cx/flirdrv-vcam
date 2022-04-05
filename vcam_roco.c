@@ -39,9 +39,9 @@
 
 // Function prototypes
 static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH * pFlashData);
+			   VCAMIOCTLFLASH *pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH * pFlashData);
+			   VCAMIOCTLFLASH *pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 
@@ -183,7 +183,7 @@ int requestRegulator(PCAM_HW_INDEP_INFO pInfo, struct regulator **reg,
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
+DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	if (pInfo->torch_cdev)
 		pFlashData->bTorchOn =
@@ -206,7 +206,7 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
+DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	if (pInfo->torch_cdev) {
 		pInfo->torch_cdev->brightness =

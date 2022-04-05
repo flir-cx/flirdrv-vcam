@@ -1,5 +1,5 @@
 /***********************************************************************
- *                                                                     
+ *
  * Project: Balthazar
  * $Date: 2013/10/04 $
  * $Author: pfitger $
@@ -31,7 +31,7 @@
 #include <linux/regulator/of_regulator.h>
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0)
 #include "../arch/arm/mach-imx/hardware.h"
 #define cpu_is_imx6s   cpu_is_imx6dl
 #else // LINUX_VERSION_CODE
@@ -72,7 +72,6 @@ static int vcam_probe(struct platform_device *pdev)
 		return 0;
 	}
 
-	dev_info(dev, "%s\n", __func__);
 	// Allocate (and zero-initiate) our control structure.
 	gpDev =
 	    (PCAM_HW_INDEP_INFO) kzalloc(sizeof(CAM_HW_INDEP_INFO), GFP_KERNEL);
@@ -360,7 +359,6 @@ static int VCAM_Open(struct inode *inode, struct file *filp)
 	struct platform_device *pdev = gpDev->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
-	dev_info(dev, "%s\n", __func__);
 	LOCK(gpDev);
 	if (!init) {
 		// Detect and Init Visual Camera

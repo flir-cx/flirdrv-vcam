@@ -1,5 +1,5 @@
 /***********************************************************************
- *                                                                     
+ *
  * Project: Balthazar
  * $Date: 2013/10/04 $
  * $Author: pfitger $
@@ -58,7 +58,7 @@ static s32 ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
 	return 0;
 }
 
-static s32 ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 * val,
+static s32 ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val,
 			   CAM_NO cam)
 {
 	struct platform_device *pdev = pInfo->pLinuxDevice;
@@ -130,7 +130,7 @@ static s32 ov5640_mod_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 mask, u8 val,
 	return ov5640_write_reg(pInfo, reg, val, cam);
 }
 
-static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 * otp_memory,
+static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory,
 				 int n, CAM_NO cam)
 {
 	struct platform_device *pdev = pInfo->pLinuxDevice;

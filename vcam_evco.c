@@ -28,7 +28,7 @@
 static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo,
 			   VCAMIOCTLFLASH * pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH * pFlashData);
+			   VCAMIOCTLFLASH *pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend);
 
@@ -144,6 +144,7 @@ struct led_classdev *FindTorch(void)
 	extern struct rw_semaphore leds_list_lock;
 	/* Find torch */
 	struct led_classdev *led_cdev, *led = NULL;
+
 	down_read(&leds_list_lock);
 	list_for_each_entry(led_cdev, &leds_list, node) {
 		if (led_cdev && led_cdev->name &&
@@ -168,7 +169,7 @@ struct led_classdev *FindTorch(void)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
+DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	int ret;
 	struct led_classdev *led = FindTorch();
@@ -180,7 +181,7 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 		ret = ERROR_SUCCESS;
 	} else {
 		pFlashData->bTorchOn = FALSE;
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,19,0)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 19, 0)
 		pr_err_once("Failed to find LED Torch\n");
 #else
 		dev_err_once(dev, "Failed to find LED Torch\n");
@@ -206,7 +207,7 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
+DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	int ret;
 	struct led_classdev *led = FindTorch();
@@ -219,7 +220,7 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 		led->brightness_set(led, led->brightness);
 		ret = ERROR_SUCCESS;
 	} else {
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,19,0)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 19, 0)
 		pr_err_once("Failed to find LED Torch\n");
 #else
 		dev_err_once(dev, "Failed to find LED Flash\n");

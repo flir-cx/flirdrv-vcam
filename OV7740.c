@@ -1,5 +1,5 @@
 /***********************************************************************
- *                                                                     
+ *
  * Project: Balthazar
  * $Date: 2013/05/06 $
  * $Author: fhammars $
@@ -26,7 +26,7 @@ static BOOL bCamActive = TRUE;
 // Local functions
 
 static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
-		       const UCHAR * buf, USHORT elements)
+		       const UCHAR *buf, USHORT elements)
 {
 	struct i2c_msg msg;
 	int ret;
@@ -123,6 +123,7 @@ DWORD OV7740_IOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_GET_ACTIVE:
 		{
 			VCAMIOCTLACTIVE *pVcamIoctl = (VCAMIOCTLACTIVE *) pBuf;
+
 			LOCK(pInfo);
 			pVcamIoctl->bActive = bCamActive;
 			dwErr = ERROR_SUCCESS;
@@ -134,6 +135,7 @@ DWORD OV7740_IOControl(PCAM_HW_INDEP_INFO pInfo,
 		{
 			BOOL bNewActive;
 			BOOL res = TRUE;
+
 			LOCK(pInfo);
 			bNewActive = (((VCAMIOCTLACTIVE *) pBuf)->bActive != 0);
 			if (bNewActive != bCamActive) {

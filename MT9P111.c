@@ -1,5 +1,5 @@
 /***********************************************************************
- *                                                                     
+ *
  * Project: Balthazar
  * $Date: 2013/10/04 $
  * $Author: pfitger $
@@ -32,7 +32,7 @@ static unsigned long GetTickCount(void)
 }
 
 static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
-		       const UCHAR * buf,
+		       const UCHAR *buf,
 		       USHORT elements,
 		       UCHAR pollReg,
 		       USHORT pollValue, USHORT timeout, CAM_NO camera)
