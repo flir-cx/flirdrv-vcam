@@ -80,10 +80,10 @@ static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 					status = (stat[0] << 8) | stat[1];
 					if (status == pollValue) {
 						pr_err
-							("%s cam %lu got result %X in %lu ms\n",
-							 __func__,
-							 cam, status,
-							 GetTickCount() - start);
+						    ("%s cam %lu got result %X in %lu ms\n",
+						     __func__,
+						     cam, status,
+						     GetTickCount() - start);
 						ready = TRUE;
 					}
 				}
@@ -92,9 +92,8 @@ static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 			}
 			if (!ready) {
 				pr_err
-					("%s cam %lu timeout with result %X\n",
-					 __func__,
-					 cam, status);
+				    ("%s cam %lu timeout with result %X\n",
+				     __func__, cam, status);
 			}
 		} else if (cam == cam_first) {
 			// Fixed delay
@@ -112,9 +111,8 @@ static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 			if (ret <= 0) {
 				if (retries-- <= 0) {
 					pr_err
-						("%s failing on element %d of %d\n",
-						 __func__,
-						 i, elements);
+					    ("%s failing on element %d of %d\n",
+					     __func__, i, elements);
 					return FALSE;	// Too many errors, give up
 				}
 				usleep_range(10000, 20000);
@@ -295,4 +293,3 @@ DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo,
 
 	return dwErr;
 }
-

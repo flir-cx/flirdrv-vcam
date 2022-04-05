@@ -60,9 +60,9 @@ static const UCHAR I2CDataInitPart1[][2] = {
  */
 	{ 0x17, 0x25 },
 	/*
-	 *	   0x17 AHSTART 0x2A RW
-	 *	   Sensor Horizontal Output Start Point 8 MSBs
-	 *	   (LSBs in REG16[1:0] (0x16))
+	 *         0x17 AHSTART 0x2A RW
+	 *         Sensor Horizontal Output Start Point 8 MSBs
+	 *         (LSBs in REG16[1:0] (0x16))
 	 */
 	{ 0x18, 0xA0 },
 	{ 0x19, 0x03 },
@@ -232,8 +232,8 @@ static const UCHAR I2CDataStandByExit[][2] = {
 	{ 0x0E, 0xE0 },
 };
 
-static const UCHAR ov7740_mirror_on_reg[][2] = { {0x0c, 0x40} };
+static const UCHAR ov7740_mirror_on_reg[][2] = { { 0x0c, 0x40 } };
 
-static const UCHAR ov7740_mirror_off_reg[][2] = { {0x0c, 0x00} };
+static const UCHAR ov7740_mirror_off_reg[][2] = { { 0x0c, 0x00 } };
 
 #endif

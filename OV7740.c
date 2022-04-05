@@ -26,7 +26,7 @@ static BOOL bCamActive = TRUE;
 // Local functions
 
 static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
-		       const UCHAR *buf, USHORT elements)
+		       const UCHAR * buf, USHORT elements)
 {
 	struct i2c_msg msg;
 	int ret;
@@ -47,9 +47,8 @@ static BOOL DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 		if (ret <= 0) {
 			if (retries-- <= 0) {
 				pr_err
-					("%s failing on element %d of %d\n",
-					 __func__,
-					 i, elements);
+				    ("%s failing on element %d of %d\n",
+				     __func__, i, elements);
 				return FALSE;	// Too many errors, give up
 			}
 			usleep_range(10000, 20000);
@@ -73,9 +72,13 @@ static int OV7740_mirror(PCAM_HW_INDEP_INFO pInfo, bool on)
 	int ret;
 
 	if (on)
-		ret = DoI2CWrite(pInfo, ov7740_mirror_on_reg, dim(ov7740_mirror_on_reg));
+		ret =
+		    DoI2CWrite(pInfo, ov7740_mirror_on_reg,
+			       dim(ov7740_mirror_on_reg));
 	else
-		ret = DoI2CWrite(pInfo, ov7740_mirror_off_reg, dim(ov7740_mirror_off_reg));
+		ret =
+		    DoI2CWrite(pInfo, ov7740_mirror_off_reg,
+			       dim(ov7740_mirror_off_reg));
 	return ret;
 }
 

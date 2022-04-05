@@ -37,12 +37,12 @@ typedef struct __CAM_HW_INDEP_INFO {
 	VCAM_CamModel eCamModel;	// type/model of visual camera module
 	enum sensor_model sensor_model[2];
 	struct
-	i2c_adapter * hI2C;
+	i2c_adapter *hI2C;
 	struct led_classdev *torch_cdev;
 
 	UCHAR cameraI2CAddress[2];
 	int flipped_sensor;	//if true the sensor is mounted upside/down.
-				//is fixed for each camera model
+	//is fixed for each camera model
 	int edge_enhancement;	//enable increased edge enhancement in camera sensor
 #ifdef CONFIG_OF
 	struct device_node *node;
@@ -55,12 +55,12 @@ typedef struct __CAM_HW_INDEP_INFO {
 	struct regulator *reg_vcm;
 #endif
 	// Function pointers
-	DWORD (*pGetTorchState)(struct __CAM_HW_INDEP_INFO *pInfo,
-				VCAMIOCTLFLASH *pFlashData);
-	DWORD (*pSetTorchState)(struct __CAM_HW_INDEP_INFO *pInfo,
-				VCAMIOCTLFLASH *pFlashData);
-	void (*pEnablePower)(struct __CAM_HW_INDEP_INFO *pInfo, BOOL bEnable);
-	void (*pSuspend)(struct __CAM_HW_INDEP_INFO *pInfo, BOOL bSuspend);
+	 DWORD(*pGetTorchState) (struct __CAM_HW_INDEP_INFO * pInfo,
+				 VCAMIOCTLFLASH * pFlashData);
+	 DWORD(*pSetTorchState) (struct __CAM_HW_INDEP_INFO * pInfo,
+				 VCAMIOCTLFLASH * pFlashData);
+	void (*pEnablePower)(struct __CAM_HW_INDEP_INFO * pInfo, BOOL bEnable);
+	void (*pSuspend)(struct __CAM_HW_INDEP_INFO * pInfo, BOOL bSuspend);
 
 	struct work_struct nightmode_work;
 	int cam;

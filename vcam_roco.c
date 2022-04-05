@@ -39,9 +39,9 @@
 
 // Function prototypes
 static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH *pFlashData);
+			   VCAMIOCTLFLASH * pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH *pFlashData);
+			   VCAMIOCTLFLASH * pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 
@@ -79,10 +79,10 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 	pInfo->pEnablePower = EnablePower;
 	pInfo->pSuspend = Suspend;
 	pInfo->cameraI2CAddress[0] = 0x78;	// At power on vcam modules will
-						// share 0x78 i2c address
+	// share 0x78 i2c address
 	pInfo->cameraI2CAddress[1] = 0x7A;
 	pInfo->edge_enhancement = 0;	// Rocky mipi to parallell IC will
-					// introduce artifacts if enabled
+	// introduce artifacts if enabled
 
 #ifdef CONFIG_OF
 
@@ -183,7 +183,7 @@ int requestRegulator(PCAM_HW_INDEP_INFO pInfo, struct regulator **reg,
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
+DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
 	if (pInfo->torch_cdev)
 		pFlashData->bTorchOn =
@@ -206,13 +206,15 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
+DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
 	if (pInfo->torch_cdev) {
 		pInfo->torch_cdev->brightness =
-		    pFlashData->bTorchOn ? pInfo->torch_cdev->max_brightness : 0;
+		    pFlashData->bTorchOn ? pInfo->torch_cdev->
+		    max_brightness : 0;
 		pInfo->torch_cdev->brightness_set(pInfo->torch_cdev,
-						  pInfo->torch_cdev->brightness);
+						  pInfo->torch_cdev->
+						  brightness);
 	}
 
 	return ERROR_SUCCESS;

@@ -799,7 +799,7 @@ static const UCHAR I2CDataInitPart9[][5] = {
 static const UCHAR I2CDataInitPart10[][5] = {
 	{ 4, 0x3C, 0x00, 0x00, 0x07 },	// jpssmode, Jpeg with embedded thumbnail [JALE]
 	{ 4, 0x3c, 0x02, 0x06, 0x11 },	//-- jpssmode_ctrl, jpss_enable_status_markers,
-					//   jpss_insert_jpeg_status [JALE]
+	//   jpss_insert_jpeg_status [JALE]
 	{ 4, 0xD8, 0x16, 0x02, 0x80 },	// jpeg_thumbnail_width = 640 [JALE]
 	{ 4, 0xD8, 0x18, 0x01, 0xE0 },	// jpeg_thumbnail_height = 480 [JALE]
 	{ 4, 0xD8, 0x26, 0x02, 0x11 },	// jpeg_tn_ctrl_var, YCbCr thumbnail [JALE]

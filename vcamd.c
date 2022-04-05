@@ -67,16 +67,18 @@ static int vcam_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 
 	//Kludge to avoid two calls to probe function..
-	if(gpDev){
+	if (gpDev) {
 		//dev_err(dev, "Gpdev already allocated...\n");
 		return 0;
 	}
 
 	dev_info(dev, "%s\n", __func__);
 	// Allocate (and zero-initiate) our control structure.
-	gpDev = (PCAM_HW_INDEP_INFO) kzalloc(sizeof(CAM_HW_INDEP_INFO), GFP_KERNEL);
+	gpDev =
+	    (PCAM_HW_INDEP_INFO) kzalloc(sizeof(CAM_HW_INDEP_INFO), GFP_KERNEL);
 	if (!gpDev) {
-		dev_err(dev, "Error allocating memory for pDev, VCAM_Init failed\n");
+		dev_err(dev,
+			"Error allocating memory for pDev, VCAM_Init failed\n");
 		return -ENOMEM;
 	}
 
@@ -85,14 +87,16 @@ static int vcam_probe(struct platform_device *pdev)
 
 	ret = misc_register(&vcam_miscdev);
 	if (ret) {
-		dev_err(dev, "Failed to register miscdev for VCAM driver (error %i\n)\n", ret);
+		dev_err(dev,
+			"Failed to register miscdev for VCAM driver (error %i\n)\n",
+			ret);
 		return ret;
 	}
 
 	// initialize this device instance
 	sema_init(&gpDev->semDevice, 1);
 
-	gpDev->flipped_sensor = 0; //Default, set to 0 if property does not exist or is empty
+	gpDev->flipped_sensor = 0;	//Default, set to 0 if property does not exist or is empty
 
 	// Init hardware
 #ifdef CONFIG_OF
@@ -106,10 +110,10 @@ static int vcam_probe(struct platform_device *pdev)
 		ret = EvcoInitHW(gpDev);
 	} else {
 #endif
-	/* if (cpu_is_mx51()) */
-	/* 	ret = PicoInitHW(gpDev); */
-	/* else if (cpu_is_imx6s()) */
-	/* 	ret = NecoInitHW(gpDev); */
+		/* if (cpu_is_mx51()) */
+		/*      ret = PicoInitHW(gpDev); */
+		/* else if (cpu_is_imx6s()) */
+		/*      ret = NecoInitHW(gpDev); */
 		if (cpu_is_imx6q()) {
 			ret = RocoInitHW(gpDev);
 		} else {
@@ -131,7 +135,7 @@ static int vcam_remove(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 
 	//Kludge to avoid two calls to probe/remove function..
-	if(!gpDev){
+	if (!gpDev) {
 		/* pr_err("gpDev has already been removed...\n"); */
 		return 0;
 	}
@@ -149,7 +153,7 @@ static int vcam_remove(struct platform_device *pdev)
 	if (gpDev->node)
 		of_node_put(gpDev->node);
 	kfree(gpDev);
-	gpDev=0;
+	gpDev = 0;
 	return 0;
 }
 
@@ -191,7 +195,7 @@ static int VCAM_Init(void)
 
 	// Register linux driver
 	vcam_platform_device = platform_device_alloc("vcam", 1);
-	if (! vcam_platform_device) {
+	if (!vcam_platform_device) {
 		pr_err("VCAM: Error adding allocating device\n");
 		return -ENOMEM;
 	}
@@ -242,11 +246,11 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_FLIP_ON:
 	case IOCTL_CAM_FLIP_OFF:
 		switch (pInfo->eCamModel) {
-		/* case MT9P111: */
-		/* 	return MT9P111_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
+			/* case MT9P111: */
+			/*      return MT9P111_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
 
-		/* case OV7740: */
-		/* 	return OV7740_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
+			/* case OV7740: */
+			/*      return OV7740_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
 
 		case OV5640:
 			return OV5640_IOControl(pInfo, Ioctl, pBuf, pUserBuf);
@@ -327,14 +331,15 @@ static long VCAM_IOControl(struct file *filep,
 			_IOC_SIZE(cmd));
 		dwErr = copy_from_user(tmp, (void *)arg, _IOC_SIZE(cmd));
 		if (dwErr)
-			dev_err(dev, "VCAM Copy from user failed: %lu\n", dwErr);
+			dev_err(dev, "VCAM Copy from user failed: %lu\n",
+				dwErr);
 	}
 
 	if (dwErr == ERROR_SUCCESS) {
 		dwErr = DoIOControl(gpDev, cmd, tmp, (PUCHAR) arg);
 		if (dwErr)
-			dev_err(dev, "VCAM Ioctl failed: %X %ld %d\n", cmd, dwErr,
-				_IOC_NR(cmd));
+			dev_err(dev, "VCAM Ioctl failed: %X %ld %d\n", cmd,
+				dwErr, _IOC_NR(cmd));
 	}
 
 	if ((dwErr == ERROR_SUCCESS) && (_IOC_DIR(cmd) & _IOC_READ)) {
@@ -355,18 +360,18 @@ static int VCAM_Open(struct inode *inode, struct file *filp)
 	struct platform_device *pdev = gpDev->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
-	dev_info(dev, "%s\n",__func__);
+	dev_info(dev, "%s\n", __func__);
 	LOCK(gpDev);
 	if (!init) {
 		// Detect and Init Visual Camera
 		switch (gpDev->eCamModel) {
-		/* case MT9P111: */
-		/* 	MT9P111_Init(gpDev); */
-		/* 	break; */
+			/* case MT9P111: */
+			/*      MT9P111_Init(gpDev); */
+			/*      break; */
 
-		/* case OV7740: */
-		/* 	OV7740_Init(gpDev); */
-		/* 	break; */
+			/* case OV7740: */
+			/*      OV7740_Init(gpDev); */
+			/*      break; */
 
 		case OV5640:
 			OV5640_Init(gpDev);

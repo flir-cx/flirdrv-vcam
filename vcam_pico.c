@@ -29,9 +29,9 @@
 static BOOL InitI2CIoport(PCAM_HW_INDEP_INFO pInfo);
 static BOOL SetI2CIoport(PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value);
 static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH *pFlashData);
+			   VCAMIOCTLFLASH * pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
-			   VCAMIOCTLFLASH *pFlashData);
+			   VCAMIOCTLFLASH * pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 
@@ -182,7 +182,7 @@ BOOL SetI2CIoport(PCAM_HW_INDEP_INFO pInfo, UCHAR bit, BOOL value)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
+DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
 	pFlashData->bTorchOn = FALSE;
 	pFlashData->bFlashOn = FALSE;
@@ -201,7 +201,7 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
+DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH * pFlashData)
 {
 	return ERROR_SUCCESS;
 }
