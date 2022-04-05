@@ -101,21 +101,21 @@ static int vcam_probe(struct platform_device *pdev)
 	if ((of_machine_is_compatible("fsl,imx6dl-ec101")) ||
 	    (of_machine_is_compatible("fsl,imx6dl-ec501"))) {
 		ret = EvcoInitHW(gpDev);
-	} else {
+	} else
 #endif
+#ifndef CONFIG_OF
 		/* if (cpu_is_mx51()) */
 		/*      ret = PicoInitHW(gpDev); */
 		/* else if (cpu_is_imx6s()) */
 		/*      ret = NecoInitHW(gpDev); */
 		if (cpu_is_imx6q()) {
 			ret = RocoInitHW(gpDev);
-		} else {
+		} else
+#endif
+		{
 			dev_err(dev, "VCAM: Error: Unknown Hardware\n");
 			ret = 0;
 		}
-#ifdef CONFIG_OF
-	}
-#endif
 
 	if (ret)
 		dev_err(dev, "failed to init hardware!\n");
