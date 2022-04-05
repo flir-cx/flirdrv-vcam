@@ -16,7 +16,12 @@ else
 	ERROR=-Werror
 endif
 
-EXTRA_CFLAGS = -I$(ALPHAREL)/SDK/FLIR/Include $(DEBUG) $(ERROR)
+ifeq ($(INCLUDE_SRC),)
+       INCLUDE_SRC ?=$(ALPHAREL)/SDK/FLIR/Include
+endif
+
+EXTRA_CFLAGS = -I$(INCLUDE_SRC)
+#EXTRA_CFLAGS = -I$(INCLUDE_SRC) $(DEBUG) $(ERROR)
 
 obj-m := vcam.o
 vcam-objs += vcamd.o
