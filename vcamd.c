@@ -184,8 +184,6 @@ static int VCAM_Init(void)
 {
 	int ret = -EIO;
 
-	pr_info("VCAM_Init\n");
-
 	// Register linux driver
 	vcam_platform_device = platform_device_alloc("vcam", 1);
 	if (!vcam_platform_device) {

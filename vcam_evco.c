@@ -72,9 +72,9 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 			"Failed registering pin vcam_reset-gpio (err %i)\n",
 			ret);
 		return -EIO;
-	} else {
-		dev_info(dev, "Registered vcam_reset-gpio\n");
 	}
+
+	dev_info(dev, "Registered vcam_reset-gpio\n");
 
 	pInfo->reg_vcm = regulator_get(&pInfo->pLinuxDevice->dev, "VCM_DOVDD");
 	if (IS_ERR(pInfo->reg_vcm)) {
@@ -93,9 +93,9 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 			ret);
 		gpio_free(pInfo->reset_gpio);
 		return -EIO;
-	} else {
-		dev_err(dev, "Registered vcam_pwdn_gpio\n");
 	}
+
+	dev_err(dev, "Registered vcam_pwdn_gpio\n");
 
 	pInfo->clk_en_gpio =
 	    of_get_named_gpio_flags(pInfo->node, "vcam_clk_en-gpio", 0, NULL);
@@ -109,11 +109,10 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 		gpio_free(pInfo->reset_gpio);
 		gpio_free(pInfo->pwdn_gpio);
 		return -EIO;
-	} else {
-		dev_err(dev, "Registered vcam_clk_en-gpio\n");
 	}
-	EnablePower(pInfo, TRUE);
 
+	dev_err(dev, "Registered vcam_clk_en-gpio\n");
+	EnablePower(pInfo, TRUE);
 	return ret;
 }
 

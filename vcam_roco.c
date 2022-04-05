@@ -210,12 +210,8 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	if (pInfo->torch_cdev) {
-		pInfo->torch_cdev->brightness =
-		    pFlashData->bTorchOn ? pInfo->torch_cdev->
-		    max_brightness : 0;
-		pInfo->torch_cdev->brightness_set(pInfo->torch_cdev,
-						  pInfo->torch_cdev->
-						  brightness);
+		pInfo->torch_cdev->brightness = pFlashData->bTorchOn ? pInfo->torch_cdev->max_brightness : 0;
+		pInfo->torch_cdev->brightness_set(pInfo->torch_cdev, pInfo->torch_cdev->brightness);
 	}
 
 	return ERROR_SUCCESS;

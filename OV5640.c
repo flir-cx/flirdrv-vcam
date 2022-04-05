@@ -190,7 +190,8 @@ static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory,
 
 	/* Disable OTP block and OPT clock. Letting the block and
 	 * clock enabled can cause the sensor to fail to start
-	 * streaming frames. */
+	 * streaming frames.
+	 */
 	retval =
 	    ov5640_mod_reg(pInfo, OV5640_SYSTEM_RESET00, BIT(4), BIT(4), cam);
 	if (retval < 0) {
@@ -232,7 +233,8 @@ static int ov5640_get_sensor_models(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 		 * OTP memory. There are two ways the memory can be programmed
 		 * from the vendor. The memory can either contain a string
 		 * specifying the model or a specific register can contain an
-		 * integer value. */
+		 * integer value.
+		 */
 
 		/* Test if sensor is programmed with a string specifying model */
 		if (strncmp
@@ -578,12 +580,12 @@ static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
-	dev_info(dev, "initCamera\n");
 
 	/* Read the OTP memory before the initial configuration. This
 	 * is the only time the otp memory is read. If read after the
 	 * initial settings configuration is loaded the sensor can
-	 * fail to start to stream frames. */
+	 * fail to start to stream frames.
+	 */
 	ov5640_get_sensor_models(pInfo, camera);
 
 	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
