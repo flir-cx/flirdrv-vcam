@@ -98,7 +98,8 @@ static int vcam_probe(struct platform_device *pdev)
 	if (of_find_property(gpDev->node, "flip-image", NULL))
 		gpDev->flipped_sensor = 1;
 
-	if ((of_machine_is_compatible("fsl,imx6dl-ec101")) ||
+	if ((of_machine_is_compatible("flir,ninjago")) ||
+	    (of_machine_is_compatible("fsl,imx6dl-ec101")) ||
 	    (of_machine_is_compatible("fsl,imx6dl-ec501"))) {
 		ret = EvcoInitHW(gpDev);
 	} else
