@@ -273,6 +273,7 @@ static int ov5640_get_sensor_model_conf(PCAM_HW_INDEP_INFO pInfo,
 
 	*value = NULL;
 	if (pInfo->sensor_model[camera] == OV5640_HIGH_K) {
+		dev_info(dev, "Selecting High_K config\n");
 		*value = ov5640_setting_High_K;
 	}
 
