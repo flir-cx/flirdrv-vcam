@@ -17,6 +17,126 @@
 #include "OV5640.h"
 #include "OV5640_paralell_csi.h"
 
+static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
+static int OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
+static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov);
+
+//attribute sysfs files
+static ssize_t enable_stream_store(struct device *dev,
+			    struct device_attribute *attr,
+			    const char *buf, size_t count)
+{
+	unsigned long val;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+
+	if (kstrtoul(buf, 0, &val) < 0)
+		return -EINVAL;
+
+	OV5640_enable_stream(pInfo, CAM_1, val);
+	return count;
+}
+
+static ssize_t flip_store(struct device *dev,
+			    struct device_attribute *attr,
+			    const char *buf, size_t count)
+{
+	unsigned long val;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+
+	if (kstrtoul(buf, 0, &val) < 0)
+		return -EINVAL;
+
+	OV5640_FlipImage(pInfo, val);
+	return count;
+}
+
+static ssize_t mirror_enable_store(struct device *dev,
+			    struct device_attribute *attr,
+			    const char *buf, size_t count)
+{
+	unsigned long val;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+
+	if (kstrtoul(buf, 0, &val) < 0)
+		return -EINVAL;
+
+	OV5640_mirror_enable(pInfo, CAM_1, val);
+	return count;
+}
+
+static ssize_t autofocus_enable_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned long val;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+
+	if (kstrtoul(buf, 0, &val) < 0)
+		return -EINVAL;
+
+	OV5640_autofocus_enable(pInfo, CAM_1, val);
+	return count;
+}
+
+
+static ssize_t set_fov_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned long val;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+
+	if (kstrtoul(buf, 0, &val) < 0)
+		return -EINVAL;
+	if (val != 54 && val != 39 && val != 28) {
+		dev_err(dev, "Invalid FOV value, use 54, 39 or 28\n");
+		return -EINVAL;
+	}
+	OV5640_set_fov(pInfo, CAM_1, val);
+	return count;
+}
+
+static DEVICE_ATTR(enable_stream, 0200, NULL, enable_stream_store);
+static DEVICE_ATTR(flip, 0200, NULL, flip_store);
+static DEVICE_ATTR(mirror_enable, 0200, NULL, mirror_enable_store);
+static DEVICE_ATTR(autofocus_enable, 0200, NULL, autofocus_enable_store);
+static DEVICE_ATTR(set_fov, 0200, NULL, set_fov_store);
+
+
+static struct attribute *ov5640_attrs[] = {
+  &dev_attr_enable_stream.attr,
+  &dev_attr_flip.attr,
+  &dev_attr_mirror_enable.attr,
+  &dev_attr_autofocus_enable.attr,
+  &dev_attr_set_fov.attr,
+  NULL
+};
+
+static const struct attribute_group ov5640_groups = {
+	.attrs = ov5640_attrs,
+};
+
+
+void OV5640_create_sysfs_attributes(struct device *dev)
+{
+	int ret;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+
+	ret = sysfs_create_group(&pdev->dev.kobj, &ov5640_groups);
+	if (ret)
+		pr_err("failed to add sys fs entry\n");
+
+}
+
+void OV5640_remove_sysfs_attributes(struct device *dev)
+{
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	sysfs_remove_group(&pdev->dev.kobj, &ov5640_groups);
+}
+
+
+//end sysfs attributes
+
+
+
 static s32 ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
 			    CAM_NO cam)
 {
@@ -582,7 +702,6 @@ static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
-
 	/* Read the OTP memory before the initial configuration. This
 	 * is the only time the otp memory is read. If read after the
 	 * initial settings configuration is loaded the sensor can
@@ -794,6 +913,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 		dwErr = ERROR_SUCCESS;
 		UNLOCK(pInfo);
 		break;
+
 
 	case IOCTL_CAM_MIRROR_ON:
 		dwErr = OV5640_mirror_enable(pInfo, g_camera, TRUE);

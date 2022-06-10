@@ -20,6 +20,7 @@
 #include <linux/of.h>
 #include <linux/regulator/consumer.h>
 #include <linux/regulator/of_regulator.h>
+#include "OV5640.h"
 
 // Definitions
 
@@ -106,14 +107,15 @@ DWORD EocoInitHW(struct device *dev)
 
 	EnablePower(pInfo, TRUE);
 	OV5640_Init(pInfo);
+	OV5640_create_sysfs_attributes(dev);
 	return ret;
 }
 
 DWORD EocoDeInitHW(struct device *dev)
 {
 	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
-
 	dev_err(dev, "%s", __func__);
+	OV5640_remove_sysfs_attributes(dev);
 	/* OV5640_DeInit(pInfo); */
 	EnablePower(pInfo, FALSE);
 	i2c_put_adapter(pInfo->hI2C);
