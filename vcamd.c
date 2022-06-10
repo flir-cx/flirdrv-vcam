@@ -60,47 +60,38 @@ static int vcam_probe(struct platform_device *pdev)
 	int ret;
 	struct device *dev = &pdev->dev;
 
-	//Kludge to avoid two calls to probe function..
-	if (gpDev) {
-		//dev_err(dev, "Gpdev already allocated...\n");
-		return 0;
-	}
-
 	// Allocate (and zero-initiate) our control structure.
-	gpDev =
-	    (PCAM_HW_INDEP_INFO) kzalloc(sizeof(CAM_HW_INDEP_INFO), GFP_KERNEL);
+	gpDev = (PCAM_HW_INDEP_INFO) devm_kzalloc(dev, sizeof(CAM_HW_INDEP_INFO), GFP_KERNEL);
 	if (!gpDev) {
-		dev_err(dev,
-			"Error allocating memory for pDev, VCAM_Init failed\n");
+		dev_err(dev, "Error allocating memory for pDev, VCAM_Init failed\n");
 		return -ENOMEM;
 	}
 
+	dev->driver_data=gpDev;
 	platform_set_drvdata(pdev, gpDev);
 	gpDev->pLinuxDevice = pdev;
 
 	ret = misc_register(&vcam_miscdev);
 	if (ret) {
-		dev_err(dev,
-			"Failed to register miscdev for VCAM driver (error %i\n)\n",
-			ret);
+		dev_err(dev, "Failed to register miscdev for VCAM driver (error %i\n)\n", ret);
 		return ret;
 	}
 
 	// initialize this device instance
 	sema_init(&gpDev->semDevice, 1);
-
 	gpDev->flipped_sensor = 0;	//Default, set to 0 if property does not exist or is empty
 
 	// Init hardware
 #ifdef CONFIG_OF
-	gpDev->node = of_find_compatible_node(NULL, NULL, "flir,vcam");
+	gpDev->node = dev->of_node;
 
 	if (of_find_property(gpDev->node, "flip-image", NULL))
 		gpDev->flipped_sensor = 1;
 
-	if ((of_machine_is_compatible("flir,ninjago")) ||
-	    (of_machine_is_compatible("fsl,imx6dl-ec101")) ||
-	    (of_machine_is_compatible("fsl,imx6dl-ec501"))) {
+	if (of_machine_is_compatible("fsl,imx6qp-eoco")) {
+		ret = EocoInitHW(dev);
+	} else if ((of_machine_is_compatible("fsl,imx6dl-ec101")) ||
+		   (of_machine_is_compatible("fsl,imx6dl-ec501"))) {
 		ret = EvcoInitHW(gpDev);
 	} else
 #endif
@@ -128,26 +119,14 @@ static int vcam_remove(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 
-	//Kludge to avoid two calls to probe/remove function..
-	if (!gpDev) {
-		/* pr_err("gpDev has already been removed...\n"); */
-		return 0;
-	}
-	dev_info(dev, "Removing VCAM driver\n");
-
-	if ((of_machine_is_compatible("fsl,imx6dl-ec101")) ||
-	    (of_machine_is_compatible("fsl,imx6dl-ec501"))) {
+	if (of_machine_is_compatible("fsl,imx6qp-eoco")) {
+		EocoDeInitHW(dev);
+	} else if ((of_machine_is_compatible("fsl,imx6dl-ec101")) ||
+		   (of_machine_is_compatible("fsl,imx6dl-ec501"))) {
 		EvcoDeInitHW(gpDev);
 	}
 	misc_deregister(&vcam_miscdev);
 
-	//Deinitialization has moved to EvcoDeInitHW
-	//When reading rocky/pico etc, be sure to add deinitialization
-
-	if (gpDev->node)
-		of_node_put(gpDev->node);
-	kfree(gpDev);
-	gpDev = 0;
 	return 0;
 }
 
@@ -185,7 +164,7 @@ static int VCAM_Init(void)
 {
 	int ret = -EIO;
 
-	// Register linux driver
+#ifndef CONFIG_OF
 	vcam_platform_device = platform_device_alloc("vcam", 1);
 	if (!vcam_platform_device) {
 		pr_err("VCAM: Error adding allocating device\n");
@@ -198,11 +177,14 @@ static int VCAM_Init(void)
 		platform_device_put(vcam_platform_device);
 		return ret;
 	}
+#endif
 
 	ret = platform_driver_register(&vcam_device_driver);
 	if (ret < 0) {
 		pr_err("VCAM: Error adding platform driver\n");
+#ifndef CONFIG_OF
 		platform_device_unregister(vcam_platform_device);
+#endif
 	}
 
 	return ret;
@@ -211,7 +193,9 @@ static int VCAM_Init(void)
 static void VCAM_Deinit(void)
 {
 	platform_driver_unregister(&vcam_device_driver);
+#ifndef CONFIG_OF
 	platform_device_unregister(vcam_platform_device);
+#endif
 }
 
 static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
