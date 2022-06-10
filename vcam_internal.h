@@ -67,6 +67,8 @@ DWORD PicoInitHW(PCAM_HW_INDEP_INFO pInfo);
 DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo);
 DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo);
 DWORD EvcoDeInitHW(PCAM_HW_INDEP_INFO pInfo);
+DWORD EocoInitHW(struct device *dev);
+DWORD EocoDeInitHW(struct device *dev);
 // Visual camera specific functions
 BOOL MT9P111_Init(PCAM_HW_INDEP_INFO pInfo);
 DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo,

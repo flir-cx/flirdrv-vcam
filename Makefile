@@ -35,7 +35,9 @@ vcam-objs += vcam_roco.o
 #endif
 
 #ifdef CONFIG_OF
-vcam-objs += vcam_evco.o OV5640.o
+vcam-objs += vcam_evco.o
+vcam-objs += vcam_eoco.o
+vcam-objs += OV5640.o
 #endif
 
 SRC := $(shell pwd)
