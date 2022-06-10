@@ -15,6 +15,7 @@
 #include <linux/platform_device.h>
 #include <linux/i2c.h>
 #include "OV5640.h"
+#include "OV5640_paralell_csi.h"
 
 static s32 ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
 			    CAM_NO cam)
@@ -589,12 +590,24 @@ static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
 	 */
 	ov5640_get_sensor_models(pInfo, camera);
 
-	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
-				dim(ov5640_init_setting_9fps_5MP), camera);
-	if (ret) {
-		dev_err(dev, "Failed to call OV5640_DoI2CWrite\n");
-		return ret;
+	if (of_find_property(pInfo->node, "vcam_paralell_interface", NULL)) {
+		dev_info(dev, "Paralell interface\n");
+		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_settings_wince,
+					dim(ov5640_init_settings_wince), camera);
+		if (ret) {
+			dev_err(dev, "Failed to configure paralell csi camera interface\n");
+			return ret;
+		}
+	} else {
+		dev_info(dev, "mipi interface\n");
+		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
+					dim(ov5640_init_setting_9fps_5MP), camera);
+		if (ret) {
+			dev_err(dev, "Failed to configure MIPI camera interface\n");
+			return ret;
+		}
 	}
+
 
 	/* Write model specific configuration */
 	ov5640_set_sensor_model_conf(pInfo, camera);

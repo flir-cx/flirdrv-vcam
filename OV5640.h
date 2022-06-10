@@ -42,6 +42,9 @@ struct reg_value {
 BOOL OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 		       struct reg_value *pMode, USHORT elements, CAM_NO camera);
 DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip);
+void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
+void OV5640_create_sysfs_attributes(struct device *dev);
+void OV5640_remove_sysfs_attributes(struct device *dev);
 
 static struct reg_value ov5640_setting_High_K[] = {
 	{ 0x5180, 0xff },
