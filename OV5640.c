@@ -143,7 +143,7 @@ static s32 ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 	u8 buf[3] = { 0 };
-	int i, retries = 50;
+	int i;
 	struct i2c_msg msgs[1];
 	int retval;
 
@@ -156,18 +156,10 @@ static s32 ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
 	msgs[0].buf = buf;
 	msgs[0].len = 3;
 
-	for (i = 0; i < retries; ++i) {
-		retval = i2c_transfer(pInfo->hI2C, msgs, 1);
-		if (retval <= 0) {
-			dev_err(dev, "i2c_transfer() failed, try no. %d\n", i);
-			usleep_range(10000, 20000);
-		} else {
-			break;
-		}
-	}
-
+	retval = i2c_transfer(pInfo->hI2C, msgs, 1);
 	if (retval <= 0) {
-		return ERROR_NOT_SUPPORTED;
+		dev_err(dev, "%s: failed, try no. %d\n", __func__, i);
+		return -1;
 	}
 
 	return 0;
@@ -180,7 +172,7 @@ static s32 ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val,
 	struct device *dev = &pdev->dev;
 	u8 buf[2] = { 0 };
 	struct i2c_msg msgs[1];
-	int i, retval, retries = 50;
+	int i, retval;
 
 	msgs[0].addr = pInfo->cameraI2CAddress[cam] >> 1;
 	msgs[0].flags = I2C_M_TEN;
@@ -191,16 +183,7 @@ static s32 ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val,
 	buf[0] = reg >> 8;
 	buf[1] = reg & 0xff;
 
-	for (i = 0; i < retries; ++i) {
-		retval = i2c_transfer(pInfo->hI2C, msgs, 1);
-		if (retval <= 0) {
-			dev_err(dev, "i2c_transfer() failed, try %d\n", i);
-			usleep_range(10000, 20000);
-		} else {
-			break;
-		}
-	}
-
+	retval = i2c_transfer(pInfo->hI2C, msgs, 1);
 	if (retval <= 0) {
 		return ERROR_NOT_SUPPORTED;
 	}
@@ -210,16 +193,7 @@ static s32 ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val,
 	msgs[0].len = 1;
 	msgs[0].buf = val;
 
-	for (i = 0; i < retries; ++i) {
-		retval = i2c_transfer(pInfo->hI2C, msgs, 1);
-		if (retval <= 0) {
-			dev_err(dev, "i2c_transfer() failed, try %d\n", i);
-			usleep_range(10000, 20000);
-		} else {
-			break;
-		}
-	}
-
+	retval = i2c_transfer(pInfo->hI2C, msgs, 1);
 	if (retval <= 0) {
 		return ERROR_NOT_SUPPORTED;
 	}
@@ -438,7 +412,6 @@ BOOL OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 	int i, retval = 0;
-	int retries = 50;
 	DWORD cam;
 	DWORD cam_first = (camera == CAM_2) ? CAM_2 : CAM_1;
 	DWORD cam_last = (camera == CAM_1) ? CAM_1 : CAM_2;
@@ -465,21 +438,12 @@ BOOL OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 
 			retval = i2c_transfer(pInfo->hI2C, msgs, 1);
 
-			if (retval <= 0) {
-				if (retries-- <= 0) {
-					dev_err(dev,
-						"failing on element %d of %d\n",
-						i, elements);
-					return ERROR_NOT_SUPPORTED;	// Too many errors, give up
-				}
-				usleep_range(10000, 20000);
-				i--;
-				continue;
-			}
+			if (retval <= 0)
+				return -1;
 		}
 	}
 
-	return ERROR_SUCCESS;
+	return 0; //ERROR_SUCCESS
 }
 
 void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
@@ -665,7 +629,7 @@ static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 
 DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 {
-	DWORD dwErr = ERROR_SUCCESS;
+	DWORD dwErr = 0; //ERROR_SUCCESS
 
 	if (flip) {
 		if (pInfo->flipped_sensor) {
@@ -698,7 +662,7 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 
 static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
 {
-	BOOL ret = ERROR_SUCCESS;
+	BOOL ret = 0; //ERROR_SUCCESS
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
@@ -799,7 +763,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 		{
 			LOCK(pInfo);
 			((VCAMIOCTLTEST *) pBuf)->bTestMode = bTestActive;
-			dwErr = ERROR_SUCCESS;
+			dwErr = 0; //ERROR_SUCCESS
 			UNLOCK(pInfo);
 		}
 		break;
@@ -809,7 +773,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			LOCK(pInfo);
 			bTestActive =
 			    (((VCAMIOCTLTEST *) pBuf)->bTestMode != 0);
-			dwErr = ERROR_SUCCESS;
+			dwErr = 0; //ERROR_SUCCESS
 			UNLOCK(pInfo);
 		}
 		break;
@@ -821,13 +785,13 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			LOCK(pInfo);
 			pVcamIoctl->bActive = bCamActive[CAM_1]
 			    || bCamActive[CAM_2];
-			dwErr = ERROR_SUCCESS;
+			dwErr = 0; //ERROR_SUCCESS
 			UNLOCK(pInfo);
 		}
 		break;
 
 	case IOCTL_CAM_INIT:
-		dwErr = ERROR_SUCCESS;
+		dwErr = 0; //ERROR_SUCCESS
 		break;
 
 	case IOCTL_CAM_SET_ACTIVE:
@@ -844,7 +808,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 				bCamActive[cam] = bNewActive;
 				dev_err(dev, "bCamActive for cam %d now %d\n",
 					cam, bCamActive[cam]);
-				dwErr = ERROR_SUCCESS;
+				dwErr = 0; //ERROR_SUCCESS
 			}
 			UNLOCK(pInfo);
 		}
@@ -910,7 +874,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_GET_FOV:
 		LOCK(pInfo);
 		((VCAMIOCTLFOV *) pBuf)->fov = g_vcamFOV;
-		dwErr = ERROR_SUCCESS;
+		dwErr = 0; //ERROR_SUCCESS
 		UNLOCK(pInfo);
 		break;
 
