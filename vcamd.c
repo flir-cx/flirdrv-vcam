@@ -109,9 +109,10 @@ static int vcam_probe(struct platform_device *pdev)
 			ret = 0;
 		}
 
-	if (ret)
+	if (ret) {
 		dev_err(dev, "failed to init hardware!\n");
-
+		misc_deregister(&vcam_miscdev);
+	}
 	return ret;
 }
 
@@ -349,7 +350,7 @@ static int VCAM_Open(struct inode *inode, struct file *filp)
 			/*      break; */
 
 		case OV5640:
-			OV5640_Init(gpDev);
+			OV5640_Init(dev);
 			break;
 
 		default:

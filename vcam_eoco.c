@@ -106,15 +106,27 @@ DWORD EocoInitHW(struct device *dev)
 	}
 
 	EnablePower(pInfo, TRUE);
-	OV5640_Init(pInfo);
-	OV5640_create_sysfs_attributes(dev);
+	ret = OV5640_Init(dev);
+	if (ret) {
+		goto out_init;
+	}
+
+	ret = OV5640_create_sysfs_attributes(dev);
+	if (ret) {
+		goto out_sysfs;
+	}
+
+	return ret;
+out_sysfs:
+	EnablePower(pInfo, FALSE);
+out_init:
+
 	return ret;
 }
 
 DWORD EocoDeInitHW(struct device *dev)
 {
 	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
-	dev_err(dev, "%s", __func__);
 	OV5640_remove_sysfs_attributes(dev);
 	/* OV5640_DeInit(pInfo); */
 	EnablePower(pInfo, FALSE);

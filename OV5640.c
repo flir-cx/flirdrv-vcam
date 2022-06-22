@@ -113,7 +113,7 @@ static const struct attribute_group ov5640_groups = {
 };
 
 
-void OV5640_create_sysfs_attributes(struct device *dev)
+int OV5640_create_sysfs_attributes(struct device *dev)
 {
 	int ret;
 	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
@@ -122,6 +122,7 @@ void OV5640_create_sysfs_attributes(struct device *dev)
 	ret = sysfs_create_group(&pdev->dev.kobj, &ov5640_groups);
 	if (ret)
 		pr_err("failed to add sys fs entry\n");
+	return ret;
 
 }
 
@@ -660,11 +661,12 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 	return dwErr;
 }
 
-static BOOL initCamera(PCAM_HW_INDEP_INFO pInfo, BOOL fullInit, CAM_NO camera)
+static int initCamera(struct device *dev, CAM_NO camera)
 {
+	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
 	BOOL ret = 0; //ERROR_SUCCESS
 	struct platform_device *pdev = pInfo->pLinuxDevice;
-	struct device *dev = &pdev->dev;
+
 
 	/* Read the OTP memory before the initial configuration. This
 	 * is the only time the otp memory is read. If read after the
@@ -737,17 +739,20 @@ BOOL OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
 	return TRUE;
 }
 
-BOOL OV5640_Init(PCAM_HW_INDEP_INFO pInfo)
+int OV5640_Init(struct device *dev)
 {
+	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
+
 	INIT_WORK(&pInfo->nightmode_work, nightmode_on_off_work);
+	int ret = 0;
 
 	if (pInfo->cameraI2CAddress[1] == 0)	//Only 1 active camera
 		g_camera = CAM_1;
 
-	initCamera(pInfo, TRUE, g_camera);
+	ret = initCamera(dev, g_camera);
 
 	init = 1;
-	return TRUE;
+	return ret;
 }
 
 DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,

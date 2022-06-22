@@ -77,7 +77,8 @@ BOOL OV7740_Init(PCAM_HW_INDEP_INFO pInfo);
 DWORD OV7740_IOControl(PCAM_HW_INDEP_INFO pInfo,
 		       DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
 
-BOOL OV5640_Init(PCAM_HW_INDEP_INFO pInfo);
+/* BOOL OV5640_Init(PCAM_HW_INDEP_INFO pInfo); */
+int OV5640_Init(struct device *dev);
 DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 		       DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
 void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend);
