@@ -20,6 +20,7 @@
 static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
 static int OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
 static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov);
+DWORD OV5640_Testpattern_Enable(struct device *dev, bool on);
 
 //attribute sysfs files
 static ssize_t enable_stream_store(struct device *dev,
@@ -49,6 +50,20 @@ static ssize_t flip_store(struct device *dev,
 	OV5640_FlipImage(pInfo, val);
 	return count;
 }
+
+static ssize_t testpattern_store(struct device *dev,
+			    struct device_attribute *attr,
+			    const char *buf, size_t count)
+{
+	unsigned long val;
+
+	if (kstrtoul(buf, 0, &val) < 0)
+		return -EINVAL;
+
+	OV5640_Testpattern_Enable(dev, val);
+	return count;
+}
+
 
 static ssize_t mirror_enable_store(struct device *dev,
 			    struct device_attribute *attr,
@@ -94,6 +109,7 @@ static ssize_t set_fov_store(struct device *dev, struct device_attribute *attr, 
 
 static DEVICE_ATTR(enable_stream, 0200, NULL, enable_stream_store);
 static DEVICE_ATTR(flip, 0200, NULL, flip_store);
+static DEVICE_ATTR(testpattern, 0200, NULL, testpattern_store);
 static DEVICE_ATTR(mirror_enable, 0200, NULL, mirror_enable_store);
 static DEVICE_ATTR(autofocus_enable, 0200, NULL, autofocus_enable_store);
 static DEVICE_ATTR(set_fov, 0200, NULL, set_fov_store);
@@ -102,6 +118,7 @@ static DEVICE_ATTR(set_fov, 0200, NULL, set_fov_store);
 static struct attribute *ov5640_attrs[] = {
   &dev_attr_enable_stream.attr,
   &dev_attr_flip.attr,
+  &dev_attr_testpattern.attr,
   &dev_attr_mirror_enable.attr,
   &dev_attr_autofocus_enable.attr,
   &dev_attr_set_fov.attr,
@@ -365,7 +382,6 @@ static int ov5640_get_sensor_model_conf(PCAM_HW_INDEP_INFO pInfo,
 {
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
-	int ret;
 
 	*value = NULL;
 	if (pInfo->sensor_model[camera] == OV5640_HIGH_K) {
@@ -626,6 +642,27 @@ static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 	pInfo->cam = camera;
 	schedule_work(&pInfo->nightmode_work);
 	return ret;
+}
+
+DWORD OV5640_Testpattern_Enable(struct device *dev, bool on)
+{
+	DWORD dwErr = ERROR_SUCCESS;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+
+	if (on) {
+		dev_info(dev, "Enable testpattern\n");
+		dwErr = OV5640_DoI2CWrite(pInfo,
+					  ov5640_testimage_on_reg,
+					  dim(ov5640_testimage_on_reg),
+					  CAM_1);
+	} else {
+		dev_info(dev, "Disable testpattern\n");
+		dwErr = OV5640_DoI2CWrite(pInfo,
+					  ov5640_testimage_off_reg,
+					  dim(ov5640_testimage_off_reg),
+					  CAM_1);
+	}
+	return dwErr;
 }
 
 DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)

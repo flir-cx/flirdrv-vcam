@@ -584,6 +584,10 @@ static struct reg_value ov5640_mirror_on_reg[] = { { 0x3821, 0x01 } };
 static struct reg_value ov5640_mirror_off_reg[] = { { 0x3821, 0x07 } };
 static struct reg_value ov5640_flip_on_reg[] = { { 0x3820, 0x46 } };
 static struct reg_value ov5640_flip_off_reg[] = { { 0x3820, 0x40 } };
+
+static struct reg_value ov5640_testimage_on_reg[] = { { 0x503d, 0x80 } };
+static struct reg_value ov5640_testimage_off_reg[] = { { 0x503d, 0x00 } };
+
 static struct reg_value night_mode_on = { 0x3a00, 0x7c };	//night mode on
 static struct reg_value autofocus_on = { 0x3022, 0x04 };
 static struct reg_value autofocus_off = { 0x3022, 0x00 };
