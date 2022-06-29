@@ -720,6 +720,11 @@ static int initCamera(struct device *dev, CAM_NO camera)
 			dev_err(dev, "Failed to configure paralell csi camera interface\n");
 			return ret;
 		}
+
+		OV5640_enable_stream(pInfo, camera, false);
+		OV5640_DoI2CWrite(pInfo, ov5640_setting_15fps_640_480, dim(ov5640_setting_15fps_640_480), camera);
+		OV5640_enable_stream(pInfo, camera, true);
+
 	} else {
 		dev_info(dev, "mipi interface\n");
 		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP,
@@ -728,41 +733,42 @@ static int initCamera(struct device *dev, CAM_NO camera)
 			dev_err(dev, "Failed to configure MIPI camera interface\n");
 			return ret;
 		}
-	}
 
 
-	/* Write model specific configuration */
-	ov5640_set_sensor_model_conf(pInfo, camera);
+		/* Write model specific configuration */
+		ov5640_set_sensor_model_conf(pInfo, camera);
 
-	// Set default flip
-	ret = OV5640_FlipImage(pInfo, FALSE);
-	if (ret) {
-		dev_err(dev, "Failed in call OV5640_FlipImage\n");
-		return ret;
-	}
-
-	ret = OV5640_mirror_enable(pInfo, camera, pInfo->flipped_sensor);
-	if (ret) {
-		dev_err(dev, "Failed in call OV5640_mirror_enable\n");
-		return ret;
-	}
-
-	if (pInfo->edge_enhancement) {
-		ret = OV5640_DoI2CWrite(pInfo, ov5640_edge_enhancement,
-					dim(ov5640_edge_enhancement), camera);
+		// Set default flip
+		ret = OV5640_FlipImage(pInfo, FALSE);
 		if (ret) {
-			dev_err(dev, "Failed in call OV5640_DoI2CWrite..\n");
+			dev_err(dev, "Failed in call OV5640_FlipImage\n");
+			return ret;
+		}
+
+		ret = OV5640_mirror_enable(pInfo, camera, pInfo->flipped_sensor);
+		if (ret) {
+			dev_err(dev, "Failed in call OV5640_mirror_enable\n");
+			return ret;
+		}
+
+		if (pInfo->edge_enhancement) {
+			ret = OV5640_DoI2CWrite(pInfo, ov5640_edge_enhancement,
+						dim(ov5640_edge_enhancement), camera);
+			if (ret) {
+				dev_err(dev, "Failed in call OV5640_DoI2CWrite..\n");
+				return ret;
+			}
+		}
+
+		ret = OV5640_set_fov(pInfo, camera, 54);
+		if (ret) {
+			dev_err(dev, "Failed in call OV5640_set_fov\n");
 			return ret;
 		}
 	}
 
-	ret = OV5640_set_fov(pInfo, camera, 54);
-	if (ret) {
-		dev_err(dev, "Failed in call OV5640_set_fov\n");
-		return ret;
-	}
-
 	return ret;
+
 }
 
 BOOL OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
