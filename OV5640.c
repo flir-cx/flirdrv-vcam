@@ -19,7 +19,7 @@
 
 static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
 static int OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
-static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov);
+static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov);
 DWORD OV5640_Testpattern_Enable(struct device *dev, bool on);
 
 //attribute sysfs files
@@ -422,7 +422,7 @@ static int ov5640_set_sensor_model_conf(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 	return ret;
 }
 
-BOOL OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
+int OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 		       struct reg_value *pMode, USHORT elements, CAM_NO camera)
 {
 	struct i2c_msg msgs[1];
@@ -471,7 +471,7 @@ void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
 		OV5640_DoI2CWrite(pInfo, stream_off, dim(stream_off), camera);
 }
 
-void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
+void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, int bSuspend)
 {
 	struct reg_value mipi_pwdn = { 0x300e, 0x45 };
 
@@ -553,7 +553,7 @@ static void nightmode_on_off_work(struct work_struct *work)
 	OV5640_nightmode_enable(pInfo, pInfo->cam, TRUE);
 }
 
-static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
+static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 {
 	int ret;
 	struct platform_device *pdev = pInfo->pLinuxDevice;
@@ -596,7 +596,7 @@ static BOOL OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 	return ret;
 }
 
-static BOOL OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
+static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 {
 	int ret;
 	struct platform_device *pdev = pInfo->pLinuxDevice;
@@ -701,7 +701,7 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 static int initCamera(struct device *dev, CAM_NO camera)
 {
 	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
-	BOOL ret = 0; //ERROR_SUCCESS
+	int ret = 0; //ERROR_SUCCESS
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 
 
@@ -771,7 +771,7 @@ static int initCamera(struct device *dev, CAM_NO camera)
 
 }
 
-BOOL OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
+int OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
 {
 	OV5640_set_5MP(pInfo, g_camera);
 	OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
@@ -798,7 +798,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 		       DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf)
 {
 	DWORD dwErr = ERROR_INVALID_PARAMETER;
-	static BOOL bTestActive;
+	static int bTestActive;
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
@@ -841,8 +841,8 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_SET_ACTIVE:
 	case IOCTL_CAM_SET_2ND_ACTIVE:
 		{
-			BOOL bNewActive;
-			BOOL res = TRUE;
+			int bNewActive;
+			int res = TRUE;
 			CAM_NO cam =
 			    (Ioctl == IOCTL_CAM_SET_ACTIVE) ? CAM_1 : CAM_2;
 			LOCK(pInfo);

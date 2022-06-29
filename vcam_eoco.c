@@ -31,8 +31,8 @@ static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo,
 			   VCAMIOCTLFLASH * pFlashData);
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
 			   VCAMIOCTLFLASH *pFlashData);
-static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
-static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend);
+static void EnablePower(PCAM_HW_INDEP_INFO pInfo, int bEnable);
+static void Suspend(PCAM_HW_INDEP_INFO pInfo, int bSuspend);
 
 //-----------------------------------------------------------------------------
 //
@@ -274,7 +274,7 @@ static int eodp_vcam_reset(struct device *dev, int on)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
+static void EnablePower(PCAM_HW_INDEP_INFO pInfo, int bEnable)
 {
 	int ret = 0;
 	struct platform_device *pdev = pInfo->pLinuxDevice;
@@ -309,7 +309,7 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
+static void Suspend(PCAM_HW_INDEP_INFO pInfo, int bSuspend)
 {
 	if (bSuspend) {
 		EnablePower(pInfo, false);

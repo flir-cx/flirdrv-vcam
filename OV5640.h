@@ -25,7 +25,7 @@ typedef enum { CAM_1, CAM_2, CAM_ALL } CAM_NO;
 // Local functions
 
 // Local variables
-static BOOL bCamActive[CAM_ALL] = { TRUE, FALSE };
+static int bCamActive[CAM_ALL] = { TRUE, FALSE };
 
 static int g_vcamFOV;
 static CAM_NO g_camera = CAM_ALL;
@@ -33,7 +33,7 @@ struct reg_value {
 	u16 u16RegAddr;
 	u8 u8Val;
 };
-BOOL OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
+int OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
 		       struct reg_value *pMode, USHORT elements, CAM_NO camera);
 DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip);
 void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
