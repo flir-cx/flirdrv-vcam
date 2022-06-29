@@ -767,9 +767,6 @@ static int initCamera(struct device *dev, CAM_NO camera)
 
 BOOL OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
 {
-	if (!init)
-		return FALSE;
-
 	OV5640_set_5MP(pInfo, g_camera);
 	OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
 
@@ -788,7 +785,6 @@ int OV5640_Init(struct device *dev)
 
 	ret = initCamera(dev, g_camera);
 
-	init = 1;
 	return ret;
 }
 

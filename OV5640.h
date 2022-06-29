@@ -27,8 +27,6 @@ typedef enum { CAM_1, CAM_2, CAM_ALL } CAM_NO;
 // Local variables
 static BOOL bCamActive[CAM_ALL] = { TRUE, FALSE };
 
-static BOOL init;
-
 static int g_vcamFOV;
 static CAM_NO g_camera = CAM_ALL;
 struct reg_value {
