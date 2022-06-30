@@ -766,10 +766,18 @@ static int initCamera(struct device *dev, CAM_NO camera)
 
 int OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
 {
-	OV5640_set_5MP(pInfo, g_camera);
-	OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
-
-	return TRUE;
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
+	inr ret = -EIO;
+	if (of_find_property(pInfo->node, "vcam_paralell_interface", NULL)) {
+			dev_err(dev, "Reinitialization of OV5640 with paralell interface not supported\n");
+			ret = -EPERM;
+	} else {
+		OV5640_set_5MP(pInfo, g_camera);
+		OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
+		ret = 0;
+	}
+	return ret;
 }
 
 int OV5640_Init(struct device *dev)
