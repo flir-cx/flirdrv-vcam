@@ -394,10 +394,12 @@ static struct reg_value ov5640_init_setting_9fps_5MP[] = {
 	{ 0x3008, 0x02 }
 };
 
+#if 0
 static struct reg_value ov5640_flip_reg[] = {
 	{ 0x3820, 0x46 },	//Sensor flip=1 and mirror=0
 	{ 0x4300, 0x32 },	//Change CbCr order
 };
+#endif
 
 static struct reg_value ov5640_edge_enhancement[] = {
 	{ 0x5302, 0x24 },	// Sigma increase edge enhancement from 10 to 24 (161025)
@@ -586,9 +588,11 @@ static struct reg_value ov5640_flip_off_reg[] = { { 0x3820, 0x40 } };
 static struct reg_value ov5640_testimage_on_reg[] = { { 0x503d, 0x80 } };
 static struct reg_value ov5640_testimage_off_reg[] = { { 0x503d, 0x00 } };
 
-static struct reg_value night_mode_on = { 0x3a00, 0x7c };	//night mode on
+static struct reg_value night_mode_on = { 0x3a00, 0x7c };
+static struct reg_value night_mode_off = { 0x3a00, 0x78 };
 static struct reg_value autofocus_on = { 0x3022, 0x04 };
 static struct reg_value autofocus_off = { 0x3022, 0x00 };
-static struct reg_value night_mode_off = { 0x3a00, 0x78 };	//night mode off
+#if 0
 static struct reg_value mipi_pwdn = { 0x300e, 0x45 };
+#endif
 #endif

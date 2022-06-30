@@ -173,6 +173,8 @@ static struct reg_value ov5640_setting_15fps_640_480[] = {
 	{0x3212, 0x11}, //End group 1
 	{0x3212, 0xa1}, //Lanch group 1
 };
+
+#if 0
 static struct reg_value ov5640_setting_9fps_3MP[] =
 {
     //MEG3_JPG 15fps (Mode2)
@@ -207,5 +209,6 @@ static struct reg_value ov5640_setting_9fps_3MP[] =
 	{0x3212, 0x10}, //End group 0
 	{0x3212, 0xa0}, //Lanch group 0
 };
+#endif
 
 #endif // OV5640_PARALELL_CSI_H
