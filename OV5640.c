@@ -155,7 +155,7 @@ void OV5640_remove_sysfs_attributes(struct device *dev)
 
 
 
-static s32 ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
+static int ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
 			    CAM_NO cam)
 {
 	struct platform_device *pdev = pInfo->pLinuxDevice;
@@ -183,7 +183,7 @@ static s32 ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
 	return 0;
 }
 
-static s32 ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val,
+static int ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val,
 			   CAM_NO cam)
 {
 	struct platform_device *pdev = pInfo->pLinuxDevice;
@@ -219,11 +219,11 @@ static s32 ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val,
 	return 0;
 }
 
-static s32 ov5640_mod_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 mask, u8 val,
+static int ov5640_mod_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 mask, u8 val,
 			  CAM_NO cam)
 {
 	u8 readval;
-	s32 ret;
+	int ret;
 
 	ret = ov5640_read_reg(pInfo, reg, &readval, cam);
 	if (ret) {
