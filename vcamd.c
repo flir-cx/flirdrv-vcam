@@ -41,7 +41,9 @@ static int VCAM_Open(struct inode *inode, struct file *filp);
 static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 			 DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
 
+#ifndef CONFIG_OF
 static struct platform_device *vcam_platform_device;
+#endif
 static PCAM_HW_INDEP_INFO gpDev;
 static const struct file_operations vcam_fops = {
 	.owner = THIS_MODULE,
