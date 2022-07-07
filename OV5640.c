@@ -943,7 +943,6 @@ static int ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 	u8 buf[3] = { 0 };
-	int i;
 	struct i2c_msg msgs[1];
 	int ret;
 
@@ -958,7 +957,7 @@ static int ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
 
 	ret = i2c_transfer(pInfo->hI2C, msgs, 1);
 	if (ret <= 0) {
-		dev_err(dev, "%s: failed, try no. %d\n", __func__, i);
+		dev_err(dev, "%s: failed\n", __func__);
 		return ret;
 	}
 
@@ -1296,24 +1295,6 @@ void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
 	else
 		OV5640_DoI2CWrite(pInfo, stream_off, dim(stream_off), camera);
 }
-
-/* OV5640_MipiSuspend
- * returns void
- * Function not used!
- * TODO Remove
- */
-
-/* void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, int Suspend) */
-/* { */
-/* 	struct reg_value mipi_pwdn = { 0x300e, 0x45 }; */
-
-/* 	if (Suspend) { */
-/* 		/\* Set register 0x300E[4:3] to 2'b11 before the PWDN pin is set high *\/ */
-/* 		mipi_pwdn.u8Val |= 0x18; */
-/* 	} */
-/* 	OV5640_DoI2CWrite(pInfo, &mipi_pwdn, 1, g_camera); */
-/* } */
-
 
 /* OV5640_nightmode_enable
  * returns void
