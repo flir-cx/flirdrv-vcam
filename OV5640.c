@@ -376,6 +376,7 @@ static struct reg_value ov5640_init_setting_9fps_5MP[] = {
 	{ 0x3008, 0x02 }
 };
 
+// ov5640_flip_reg is not used, thus removed for now
 #if 0
 static struct reg_value ov5640_flip_reg[] = {
 	{ 0x3820, 0x46 },	//Sensor flip=1 and mirror=0
@@ -574,6 +575,8 @@ static struct reg_value night_mode_on = { 0x3a00, 0x7c };
 static struct reg_value night_mode_off = { 0x3a00, 0x78 };
 static struct reg_value autofocus_on = { 0x3022, 0x04 };
 static struct reg_value autofocus_off = { 0x3022, 0x00 };
+
+// mipi_pwdn is not used, thus removed for now
 #if 0
 static struct reg_value mipi_pwdn = { 0x300e, 0x45 };
 #endif
@@ -759,6 +762,7 @@ static struct reg_value ov5640_setting_15fps_640_480[] = {
 	{0x3212, 0xa1}, //Lanch group 1
 };
 
+// ov5640_setting_9fps_3MP is not used, thus removed for now
 #if 0
 static struct reg_value ov5640_setting_9fps_3MP[] =
 {
