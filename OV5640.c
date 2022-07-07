@@ -1529,7 +1529,7 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 	struct reg_value *regval;
 
 	if ((pInfo->flipped_sensor && !flip) ||
-	    (!(pInfo->flipped_sensor && flip)))
+	    ((!pInfo->flipped_sensor && flip)))
 		regval = ov5640_flip_on_reg;
 	else
 		regval = ov5640_flip_off_reg;
