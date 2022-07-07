@@ -17,6 +17,12 @@
 #include <linux/i2c.h>
 #include "OV5640.h"
 
+
+/* Definition of DT node name, construction is error prone, so avoiding some
+ * error possibilities by using definition
+ */
+#define VCAM_PARALLELL_INTERFACE "vcam_parallell_interface"
+
 static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
 static void OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
 static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov);
@@ -1400,7 +1406,7 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
-	if (of_find_property(pInfo->node, "vcam_paralell_interface", NULL)) {
+	if (of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL)) {
 		dev_err(dev, "5MP mode settings unavailable for Eowyn\n");
 		ret = -EPERM;
 	} else {
@@ -1454,7 +1460,7 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 	int ret;
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
-	if (of_find_property(pInfo->node, "vcam_paralell_interface", NULL)) {
+	if (of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL)) {
 		dev_err(dev, "No FOV change settings available\n");
 		ret = -EPERM;
 	} else {
@@ -1594,11 +1600,11 @@ static int initCSICamera(struct device *dev, CAM_NO camera)
 	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
 	int ret = 0;
 
-	dev_info(dev, "Paralell interface\n");
+	dev_info(dev, "Parallell interface\n");
 	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_settings_wince,
 				dim(ov5640_init_settings_wince), camera);
 	if (ret) {
-		dev_err(dev, "Failed to configure paralell csi camera interface\n");
+		dev_err(dev, "Failed to configure parallell csi camera interface\n");
 		return ret;
 	}
 
@@ -1633,7 +1639,7 @@ static int initCamera(struct device *dev, CAM_NO camera)
 	 */
 	ov5640_get_sensor_models(pInfo, camera);
 
-	if (of_find_property(pInfo->node, "vcam_paralell_interface", NULL)) {
+	if (of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL)) {
 		ret = initCSICamera(dev, camera);
 	} else {
 		ret = initMIPICamera(dev, camera);
