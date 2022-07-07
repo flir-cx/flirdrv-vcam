@@ -578,7 +578,7 @@ static struct reg_value autofocus_off = { 0x3022, 0x00 };
 static struct reg_value mipi_pwdn = { 0x300e, 0x45 };
 #endif
 
-static int bCamActive[CAM_ALL] = { TRUE, FALSE };
+static int CamActive[CAM_ALL] = { TRUE, FALSE };
 
 static int g_vcamFOV;
 static CAM_NO g_camera = CAM_ALL;
@@ -1299,11 +1299,11 @@ void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
  * TODO Remove
  */
 
-/* void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, int bSuspend) */
+/* void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, int Suspend) */
 /* { */
 /* 	struct reg_value mipi_pwdn = { 0x300e, 0x45 }; */
 
-/* 	if (bSuspend) { */
+/* 	if (Suspend) { */
 /* 		/\* Set register 0x300E[4:3] to 2'b11 before the PWDN pin is set high *\/ */
 /* 		mipi_pwdn.u8Val |= 0x18; */
 /* 	} */
@@ -1712,7 +1712,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 		       DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf)
 {
 	DWORD dwErr = ERROR_INVALID_PARAMETER;
-	static int bTestActive;
+	static int TestActive;
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
@@ -1720,7 +1720,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_GET_TEST:
 		{
 			LOCK(pInfo);
-			((VCAMIOCTLTEST *) pBuf)->bTestMode = bTestActive;
+			((VCAMIOCTLTEST *) pBuf)->bTestMode = TestActive;
 			dwErr = 0;
 			UNLOCK(pInfo);
 		}
@@ -1729,7 +1729,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_SET_TEST:
 		{
 			LOCK(pInfo);
-			bTestActive = (((VCAMIOCTLTEST *) pBuf)->bTestMode != 0);
+			TestActive = (((VCAMIOCTLTEST *) pBuf)->bTestMode != 0);
 			dwErr = 0;
 			UNLOCK(pInfo);
 		}
@@ -1740,7 +1740,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			VCAMIOCTLACTIVE *pVcamIoctl = (VCAMIOCTLACTIVE *) pBuf;
 
 			LOCK(pInfo);
-			pVcamIoctl->bActive = bCamActive[CAM_1] || bCamActive[CAM_2];
+			pVcamIoctl->bActive = CamActive[CAM_1] || CamActive[CAM_2];
 			dwErr = 0;
 			UNLOCK(pInfo);
 		}
@@ -1753,15 +1753,15 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_SET_ACTIVE:
 	case IOCTL_CAM_SET_2ND_ACTIVE:
 		{
-			int bNewActive;
+			int NewActive;
 			int res = TRUE;
 			CAM_NO cam = (Ioctl == IOCTL_CAM_SET_ACTIVE) ? CAM_1 : CAM_2;
 			LOCK(pInfo);
-			bNewActive = (((VCAMIOCTLACTIVE *) pBuf)->bActive != 0);
+			NewActive = (((VCAMIOCTLACTIVE *) pBuf)->bActive != 0);
 
 			if (res) {
-				bCamActive[cam] = bNewActive;
-				dev_err(dev, "bCamActive for cam %d now %d\n", cam, bCamActive[cam]);
+				CamActive[cam] = NewActive;
+				dev_err(dev, "CamActive for cam %d now %d\n", cam, CamActive[cam]);
 				dwErr = 0;
 			}
 			UNLOCK(pInfo);
