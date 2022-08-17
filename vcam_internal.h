@@ -16,7 +16,6 @@
 // Definitions
 #define	LOCK(pd)		down(&pd->semDevice)
 #define	UNLOCK(pd)		up(&pd->semDevice)
-
 #define	dim(x)			(sizeof(x) / sizeof(x[0]))
 
 enum sensor_model {
@@ -30,13 +29,10 @@ typedef struct __CAM_HW_INDEP_INFO {
 	struct semaphore semDevice;	// serialize access to this device's state
 	VCAM_CamModel eCamModel;	// type/model of visual camera module
 	enum sensor_model sensor_model[2];
-	struct
-	i2c_adapter * hI2C;
+	struct i2c_adapter *hI2C;
 	struct led_classdev *torch_cdev;
-
 	UCHAR cameraI2CAddress[2];
 	int flipped_sensor;	//if true the sensor is mounted upside/down.
-	//is fixed for each camera model
 	int edge_enhancement;	//enable increased edge enhancement in camera sensor
 #ifdef CONFIG_OF
 	struct device_node *node;
@@ -48,11 +44,10 @@ typedef struct __CAM_HW_INDEP_INFO {
 	struct regulator *reg_vcm2i2c;
 	struct regulator *reg_vcm;
 #endif
+
 	// Function pointers
-	 DWORD(*pGetTorchState) (struct __CAM_HW_INDEP_INFO *pInfo,
-				 VCAMIOCTLFLASH * pFlashData);
-	 DWORD(*pSetTorchState) (struct __CAM_HW_INDEP_INFO *pInfo,
-				 VCAMIOCTLFLASH * pFlashData);
+	DWORD(*pGetTorchState) (struct __CAM_HW_INDEP_INFO *pInfo, VCAMIOCTLFLASH * pFlashData);
+	DWORD(*pSetTorchState) (struct __CAM_HW_INDEP_INFO *pInfo, VCAMIOCTLFLASH * pFlashData);
 	void (*pEnablePower)(struct __CAM_HW_INDEP_INFO *pInfo, BOOL bEnable);
 	void (*pSuspend)(struct __CAM_HW_INDEP_INFO *pInfo, BOOL bSuspend);
 
@@ -71,15 +66,12 @@ DWORD EocoInitHW(struct device *dev);
 DWORD EocoDeInitHW(struct device *dev);
 // Visual camera specific functions
 BOOL MT9P111_Init(PCAM_HW_INDEP_INFO pInfo);
-DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo,
-			DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
+DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
 BOOL OV7740_Init(PCAM_HW_INDEP_INFO pInfo);
-DWORD OV7740_IOControl(PCAM_HW_INDEP_INFO pInfo,
-		       DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
+DWORD OV7740_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
 
 int OV5640_Init(struct device *dev);
-DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
-		       DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
+DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
 void OV5640_MipiSuspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend);
 int OV5640_reinit(PCAM_HW_INDEP_INFO pInfo);
 

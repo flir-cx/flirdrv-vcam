@@ -1120,13 +1120,13 @@ static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory,
  * If ov5640_get_otp_memory succeeds  on first camera, but fails on second camera output is error from ov5640_get_otp_memory on second camera
  * If ov5640_get_otp_memory fails  on first camera and fails on second camera output is error from ov5640_get_otp_memory on second camera
  * Secondly, If ov5640_get_otp_memory fails on one of the cameras, pInfo->sensor_model[camera] is not changed (for that camera)...
- *  The sensor_model will probably implicitly end up ass OV5640_STANDARD, as that could be 0 in the defined enum... and gpDev is allocated with kzalloc in vcamd.c
+ *  The sensor_model will probably implicitly end up as OV5640_STANDARD, as that could be 0 in the defined enum... and gpDev is allocated with kzalloc in vcamd.c
  *
  *
  * If camera is set to CAM_1 or CAM_2:
  * Return 0 on success, and error from ov5640_get_otp_memory on failure
  * Secondly, If ov5640_get_otp_memory fails on one of the cameras, pInfo->sensor_model[camera] is not changed (for that camera)...
- *  The sensor_model will probably implicitly end up ass OV5640_STANDARD, as that could be 0 in the defined enum... and gpDev is allocated with kzalloc in vcamd.c
+ * The sensor_model will probably implicitly end up as OV5640_STANDARD, as that could be 0 in the defined enum... and gpDev is allocated with kzalloc in vcamd.c
  *
  * (if camera is set to CAM_ALL, we iterate from CAM_1 to CAM_2, else if
  * camera is set to CAM_1 we iterate from CAM_1 to CAM_1, and if camera is set
@@ -1175,7 +1175,7 @@ static int ov5640_get_sensor_models(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 		}
 
 		/* Assume the sensor is a standard model */
-		dev_info(dev, "ov5640: Standard sensor model\n");
+		dev_info(dev, "ov5640: cam %lu Standard sensor model\n", cam);
 		pInfo->sensor_model[cam] = OV5640_STANDARD;
 	}
 
@@ -1600,7 +1600,7 @@ static int initCSICamera(struct device *dev, CAM_NO camera)
 	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
 	int ret = 0;
 
-	dev_info(dev, "Parallell interface\n");
+	dev_info(dev, "cam %lu, Parallell interface\n", camera);
 	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_settings_wince,
 				dim(ov5640_init_settings_wince), camera);
 	if (ret) {

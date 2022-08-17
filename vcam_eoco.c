@@ -82,6 +82,12 @@ DWORD EocoInitHW(struct device *dev)
 		return -EIO;
 	}
 
+	pInfo->reg_vcm1i2c = devm_regulator_get(&pInfo->pLinuxDevice->dev, "EODC_I2C_ENABLE");
+	if (IS_ERR(pInfo->reg_vcm1i2c)) {
+		dev_err(dev, "VCAM: Error fetching regulator EODC_I2C_ENABLE\n");
+		return -EIO;
+	}
+
 	pInfo->pwdn_gpio = of_get_named_gpio_flags(pInfo->node, "vcam_pwdn-gpio", 0, NULL);
 	if (gpio_is_valid(pInfo->pwdn_gpio)) {
 		ret = devm_gpio_request_one(&pdev->dev, pInfo->pwdn_gpio, GPIOF_OUT_INIT_HIGH, "vcam_pwdn-gpio");
@@ -281,18 +287,19 @@ static void EnablePower(PCAM_HW_INDEP_INFO pInfo, int bEnable)
 	struct device *dev = &pdev->dev;
 
 	if (bEnable) {
-
 		ret = regulator_enable(pInfo->reg_vcm);
 		usleep_range(1000, 10000);
-		eodp_vcam_enable_clk(dev, 1); //setting changed compared to evco...
+		eodp_vcam_enable_clk(dev, 1);
 		eodp_vcam_powerdown(dev, 0);
 		usleep_range(1000, 10000);
-		eodp_vcam_reset(dev, 0); //setting changed compared to evco...
+		eodp_vcam_reset(dev, 0);
+		ret = regulator_enable(pInfo->reg_vcm1i2c);
 	} else {
-		eodp_vcam_reset(dev, 1); //setting changed compared to evco...
+		regulator_disable(pInfo->reg_vcm1i2c);
+		eodp_vcam_reset(dev, 1);
 		usleep_range(10000, 10000);
 		eodp_vcam_powerdown(dev, 1);
-		eodp_vcam_enable_clk(dev, 0); //setting changed compared to evco...
+		eodp_vcam_enable_clk(dev, 0);
 		usleep_range(10000, 10000);
 		ret = regulator_disable(pInfo->reg_vcm);
 	}
