@@ -382,10 +382,8 @@ static struct reg_value ov5640_init_setting_9fps_5MP[] = {
 	{ 0x3008, 0x02 }
 };
 
+static struct reg_value ov5640_edge_enhancement = { 0x5302, 0x24 };	// Sigma increase edge enhancement from 10 to 24 (161025)
 
-static struct reg_value ov5640_edge_enhancement[] = {
-	{ 0x5302, 0x24 },	// Sigma increase edge enhancement from 10 to 24 (161025)
-};
 
 /*
  * settings based on ov5640_setting_30fps_720P_1280_720
@@ -554,21 +552,17 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV28[] = {
 	{ 0x519d, 0x14 },	// [END] Sigma HFOV54/HFOV28 AWB (161202)
 };
 
-static struct reg_value stream_on[] = {
-	{ 0x4202, 0x00 },	//stream on
-};
+static struct reg_value stream_on = { 0x4202, 0x00 };	//stream on
+static struct reg_value stream_off = { 0x4202, 0x0f };	//stream off
 
-static struct reg_value stream_off[] = {
-	{ 0x4202, 0x0f },	//stream off
-};
 
-static struct reg_value ov5640_mirror_on_reg[] = { { 0x3821, 0x01 } };
-static struct reg_value ov5640_mirror_off_reg[] = { { 0x3821, 0x07 } };
-static struct reg_value ov5640_flip_on_reg[] = { { 0x3820, 0x46 } };
-static struct reg_value ov5640_flip_off_reg[] = { { 0x3820, 0x40 } };
+static struct reg_value ov5640_mirror_on_reg = { 0x3821, 0x01 };
+static struct reg_value ov5640_mirror_off_reg = { 0x3821, 0x07 };
+static struct reg_value ov5640_flip_on_reg = { 0x3820, 0x46 };
+static struct reg_value ov5640_flip_off_reg = { 0x3820, 0x40 };
 
-static struct reg_value ov5640_testimage_on_reg[] = { { 0x503d, 0x80 } };
-static struct reg_value ov5640_testimage_off_reg[] = { { 0x503d, 0x00 } };
+static struct reg_value ov5640_testimage_on_reg = { 0x503d, 0x80 };
+static struct reg_value ov5640_testimage_off_reg = { 0x503d, 0x00 };
 
 static struct reg_value night_mode_on = { 0x3a00, 0x7c };
 static struct reg_value night_mode_off = { 0x3a00, 0x78 };
@@ -1246,9 +1240,9 @@ int OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo, struct reg_value *pMode, USHORT 
 void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
 {
 	if (enable)
-		OV5640_DoI2CWrite(pInfo, stream_on, dim(stream_on), camera);
+		OV5640_DoI2CWrite(pInfo, &stream_on, 1, camera);
 	else
-		OV5640_DoI2CWrite(pInfo, stream_off, dim(stream_off), camera);
+		OV5640_DoI2CWrite(pInfo, &stream_off, 1, camera);
 }
 
 /* OV5640_nightmode_enable
@@ -1278,9 +1272,9 @@ static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool 
 	int ret;
 
 	if (enable)
-		ret = OV5640_DoI2CWrite(pInfo, ov5640_mirror_on_reg, dim(ov5640_mirror_on_reg), camera);
+		ret = OV5640_DoI2CWrite(pInfo, &ov5640_mirror_on_reg, 1, camera);
 	else
-		ret = OV5640_DoI2CWrite(pInfo, ov5640_mirror_off_reg, dim(ov5640_mirror_off_reg), camera);
+		ret = OV5640_DoI2CWrite(pInfo, &ov5640_mirror_off_reg, 1, camera);
 	return ret;
 }
 
@@ -1370,7 +1364,7 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 		ov5640_set_sensor_model_conf(pInfo, camera);
 
 		if (pInfo->edge_enhancement) {
-			ret = OV5640_DoI2CWrite(pInfo, ov5640_edge_enhancement, dim(ov5640_edge_enhancement), camera);
+			ret = OV5640_DoI2CWrite(pInfo, &ov5640_edge_enhancement, 1, camera);
 			if (ret) {
 				dev_err(dev, "Failed to call OV5640_DoI2CWrite\n");
 				return ret;
@@ -1457,10 +1451,10 @@ static void OV5640_Testpattern_Enable(struct device *dev, bool on)
 
 	if (on) {
 		dev_info(dev, "Enable testpattern\n");
-		OV5640_DoI2CWrite(pInfo, ov5640_testimage_on_reg, dim(ov5640_testimage_on_reg), CAM_1);
+		OV5640_DoI2CWrite(pInfo, &ov5640_testimage_on_reg, 1, CAM_1);
 	} else {
 		dev_info(dev, "Disable testpattern\n");
-		OV5640_DoI2CWrite(pInfo, ov5640_testimage_off_reg, dim(ov5640_testimage_off_reg), CAM_1);
+		OV5640_DoI2CWrite(pInfo, &ov5640_testimage_off_reg, 1, CAM_1);
 	}
 }
 
@@ -1479,11 +1473,11 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 
 	if ((pInfo->flipped_sensor && !flip) ||
 	    ((!pInfo->flipped_sensor && flip)))
-		regval = ov5640_flip_on_reg;
+		regval = &ov5640_flip_on_reg;
 	else
-		regval = ov5640_flip_off_reg;
+		regval = &ov5640_flip_off_reg;
 
-	return OV5640_DoI2CWrite(pInfo, regval, dim(regval), g_camera);
+	return OV5640_DoI2CWrite(pInfo, regval, 1, g_camera);
 }
 
 
@@ -1522,7 +1516,7 @@ static int initMIPICamera(struct device *dev, CAM_NO camera)
 	}
 
 	if (pInfo->edge_enhancement) {
-		ret = OV5640_DoI2CWrite(pInfo, ov5640_edge_enhancement, dim(ov5640_edge_enhancement), camera);
+		ret = OV5640_DoI2CWrite(pInfo, &ov5640_edge_enhancement, 1, camera);
 		if (ret) {
 			dev_err(dev, "Failed in call OV5640_DoI2CWrite..\n");
 			return ret;
