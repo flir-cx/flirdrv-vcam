@@ -382,13 +382,6 @@ static struct reg_value ov5640_init_setting_9fps_5MP[] = {
 	{ 0x3008, 0x02 }
 };
 
-// ov5640_flip_reg is not used, thus removed for now
-#if 0
-static struct reg_value ov5640_flip_reg[] = {
-	{ 0x3820, 0x46 },	//Sensor flip=1 and mirror=0
-	{ 0x4300, 0x32 },	//Change CbCr order
-};
-#endif
 
 static struct reg_value ov5640_edge_enhancement[] = {
 	{ 0x5302, 0x24 },	// Sigma increase edge enhancement from 10 to 24 (161025)
@@ -582,11 +575,6 @@ static struct reg_value night_mode_off = { 0x3a00, 0x78 };
 static struct reg_value autofocus_on = { 0x3022, 0x04 };
 static struct reg_value autofocus_off = { 0x3022, 0x00 };
 
-// mipi_pwdn is not used, thus removed for now
-#if 0
-static struct reg_value mipi_pwdn = { 0x300e, 0x45 };
-#endif
-
 static int CamActive[CAM_ALL] = { TRUE, FALSE };
 
 static int g_vcamFOV;
@@ -767,45 +755,6 @@ static struct reg_value ov5640_setting_15fps_640_480[] = {
 	{0x3212, 0x11}, //End group 1
 	{0x3212, 0xa1}, //Lanch group 1
 };
-
-// ov5640_setting_9fps_3MP is not used, thus removed for now
-#if 0
-static struct reg_value ov5640_setting_9fps_3MP[] =
-{
-    //MEG3_JPG 15fps (Mode2)
-	//crop 2304 x 1536 output 2048 x 1536 setup
-	{0x3212, 0x00}, //Enable group 0
-	{0x3036, 0x69}, //PLL multiplier
-	{0x3a00, 0x78}, //AEC ctrl
-	{0x3821, 0x21}, //Mirror, binning, Jpeg enable
-	{0x3814, 0x11}, {0x3815, 0x11}, //Timing x and y inc
-	{0x3800, 0x00}, {0x3801, 0x90}, // X address start = 0x090
-	{0x3802, 0x00}, {0x3803, 0x66}, // Y address start = 0x066
-	{0x3804, 0x09}, {0x3805, 0xaF}, // X address end   = 0x9af
-	{0x3806, 0x07}, {0x3807, 0x31}, // Y address end   = 0x731
-	{0x3808, 0x08}, {0x3809, 0x00}, // DVP width  output size = 0x800 (2048)
-	{0x380a, 0x06}, {0x380b, 0x00}, // DVP height output size = 0x600 (1536)
-	{0x380c, 0x0b}, {0x380d, 0x1c}, // Total horizontal size = 0xb1c
-	{0x380e, 0x07}, {0x380f, 0xb0}, // Total vertical size  =  0x7b0
-	{0x3810, 0x00}, {0x3811, 0x1e}, // ISP horizontal offset = 0x1e
-	{0x3812, 0x00}, {0x3813, 0x0f}, // ISP vertical   offset = 0xf
-
-	{0x3618, 0x04}, {0x3612, 0x2b}, //undoc
-	{0x3708, 0x63}, {0x3709, 0x12},
-	{0x370c, 0x00}, {0x3824, 0x04},
-
-	{0x3a02, 0x07}, {0x3a03, 0xb0}, // AEC Max Expo (60 Hz)
-	{0x3a0e, 0x06}, {0x3a0d, 0x08}, //AEC ctrl
-	{0x3a14, 0x07}, {0x3a15, 0xb0}, //AEC Max Expo (50 Hz)
-	{0x3000, 0x00}, {0x3002, 0x00}, //System reset
-	{0x3004, 0xff}, {0x3006, 0xff}, //Clock enable
-	{0x5684, 0x0a}, {0x5685, 0x20}, //AVG x-window reg
-	{0x5686, 0x07}, {0x5687, 0x98}, //AVG y-window reg
-	{0x3212, 0x10}, //End group 0
-	{0x3212, 0xa0}, //Lanch group 0
-};
-#endif
-/* END OF COPY */
 
 /* attribute sysfs files */
 static ssize_t enable_stream_store(struct device *dev,
