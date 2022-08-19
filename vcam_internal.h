@@ -16,7 +16,8 @@
 // Definitions
 #define	LOCK(pd)		down(&pd->semDevice)
 #define	UNLOCK(pd)		up(&pd->semDevice)
-#define	dim(x)			(sizeof(x) / sizeof(x[0]))
+#define	dim(x)			(sizeof(x) / sizeof((x)[0]))
+
 
 enum sensor_model {
 	OV5640_STANDARD,

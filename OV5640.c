@@ -28,7 +28,8 @@ static void OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, boo
 static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov);
 static void OV5640_Testpattern_Enable(struct device *dev, bool on);
 
-static struct reg_value ov5640_setting_High_K[] = {
+#define OV5640_SETTING_HIGH_K_ELEMENTS 93
+static struct reg_value ov5640_setting_High_K[OV5640_SETTING_HIGH_K_ELEMENTS] = {
 	{ 0x5180, 0xff },
 	{ 0x5181, 0xf2 },
 	{ 0x5182, 0x0 },
@@ -127,7 +128,8 @@ static struct reg_value ov5640_setting_High_K[] = {
 /* Settings from
  * Rocky/Elektronik/Komponenter/datablad/VCam/Settings/
  */
-static struct reg_value ov5640_init_setting_9fps_5MP[] = {
+#define OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS 252
+static struct reg_value ov5640_init_setting_9fps_5MP[OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS] = {
 	{ 0x3103, 0x11 },
 	{ 0x3008, 0x82 },
 	{ 0x3008, 0x42 },
@@ -392,7 +394,8 @@ static struct reg_value ov5640_edge_enhancement = { 0x5302, 0x24 };	// Sigma inc
  *
  * vcam fov=55 used with IR lens fov=45
  */
-static struct reg_value ov5640_setting_30fps_1280_960_HFOV54[] = {
+#define OV5640_SETTING_30FPS_1280_960_HFOV54 75
+static struct reg_value ov5640_setting_30fps_1280_960_HFOV54[OV5640_SETTING_30FPS_1280_960_HFOV54] = {
 	{ 0x3008, 0x42 },
 	{ 0x3035, 0x21 }, { 0x3036, 0x5c }, { 0x3c07, 0x07 },
 	{ 0x3c09, 0x1c }, { 0x3c0a, 0x9c }, { 0x3c0b, 0x40 },
@@ -448,7 +451,8 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV54[] = {
  *
  * vcam fov=39 used with IR lens fov=28
  */
-static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[] = {
+#define OV5640_SETTING_30FPS_1280_960_HFOV39 75
+static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[OV5640_SETTING_30FPS_1280_960_HFOV39] = {
 	{ 0x3008, 0x42 },
 	{ 0x3035, 0x12 }, { 0x3036, 0x60 }, { 0x3c07, 0x07 },
 	{ 0x3c09, 0x1c }, { 0x3c0a, 0x9c }, { 0x3c0b, 0x40 },
@@ -505,7 +509,8 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[] = {
  * vcam fov=28 used with IR lens fov=12
  *
  */
-static struct reg_value ov5640_setting_30fps_1280_960_HFOV28[] = {
+#define OV5640_SETTING_30FPS_1280_960_HFOV28 75
+static struct reg_value ov5640_setting_30fps_1280_960_HFOV28[OV5640_SETTING_30FPS_1280_960_HFOV28] = {
 	{ 0x3008, 0x42 },
 	{ 0x3035, 0x21 }, { 0x3036, 0x5c }, { 0x3c07, 0x07 },
 	{ 0x3c09, 0x1c }, { 0x3c0a, 0x9c }, { 0x3c0b, 0x40 },
@@ -581,7 +586,8 @@ static CAM_NO g_camera = CAM_ALL;
  *
  *
  */
-static struct reg_value ov5640_init_settings_wince[] = {
+#define OV5640_INIT_SETTINGS_WINCE_ELEMENTS 212
+static struct reg_value ov5640_init_settings_wince[OV5640_INIT_SETTINGS_WINCE_ELEMENTS] = {
 	{0x3103, 0x11}, //SCCB system ctrl
 	{0x3008, 0x42}, //System root divider
 	{0x3103, 0x03}, //SCCB system ctrl
@@ -716,7 +722,8 @@ static struct reg_value ov5640_init_settings_wince[] = {
 	{0x3008, 0x02}, //Enable PCLK
 };
 
-static struct reg_value ov5640_setting_15fps_640_480[] = {
+#define OV5640_SETTINGS_15FPS_640_480 48
+static struct reg_value ov5640_setting_15fps_640_480[OV5640_SETTINGS_15FPS_640_480] = {
     //VGA(YUV) 15fps
 	//Crop 2304 x 1536 output 640 x 480 setup
 	{0x3212, 0x01}, //Enable group 1
@@ -1125,23 +1132,6 @@ static int ov5640_get_sensor_models(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 	return ret;
 }
 
-/* ov5640_get_sensor_model_conf
- *
- * function returns void
- * returns NULL or pointer to configuration setting data for OV5640 in **value
- */
-static void ov5640_get_sensor_model_conf(PCAM_HW_INDEP_INFO pInfo, struct reg_value **value, CAM_NO camera)
-{
-	struct platform_device *pdev = pInfo->pLinuxDevice;
-	struct device *dev = &pdev->dev;
-
-	*value = NULL;
-	if (pInfo->sensor_model[camera] == OV5640_HIGH_K) {
-		dev_info(dev, "Selecting High_K config\n");
-		*value = ov5640_setting_High_K;
-	}
-}
-
 /* ov5640_set_sensor_model_conf
  *
  * configures the camera with setting acquired from ov5640_get_sensor_model_conf
@@ -1166,18 +1156,21 @@ static int ov5640_set_sensor_model_conf(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 	DWORD cam;
 	DWORD cam_first = (camera == CAM_2) ? CAM_2 : CAM_1;
 	DWORD cam_last = (camera == CAM_1) ? CAM_1 : CAM_2;
-	struct reg_value *pModeSetting = NULL;
 	int ret = 0;
 
 	for (cam = cam_first; cam <= cam_last; cam++) {
-		ov5640_get_sensor_model_conf(pInfo, &pModeSetting, cam);
-
-		if (pModeSetting) {
-			ret = OV5640_DoI2CWrite(pInfo, pModeSetting, dim(pModeSetting), cam);
+		if (pInfo->sensor_model[camera] == OV5640_HIGH_K) {
+			dev_info(dev, "Selecting High_K config\n");
+			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_High_K, OV5640_SETTING_HIGH_K_ELEMENTS, cam);
 			if (ret) {
 				dev_err(dev, "OV5640_DoI2CWrite() failed for camera %lu\n", cam);
 				continue;
 			}
+		} else if (pInfo->sensor_model[camera] == OV5640_STANDARD) {
+			dev_info(dev, "Selecting Standard OV5640 config\n");
+		} else {
+			dev_err(dev, "Unknown OV5640\n");
+			return -1;
 		}
 	}
 
@@ -1354,7 +1347,7 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 		ret = -EPERM;
 	} else {
 		OV5640_enable_stream(pInfo, camera, FALSE);
-		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP, dim(ov5640_init_setting_9fps_5MP), camera);
+		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP, OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS, camera);
 		if (ret) {
 			dev_err(dev, "Failed to call OV5640_DoI2CWrite\n");
 			return ret;
@@ -1411,17 +1404,17 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 
 		switch (fov) {
 		case 54:
-			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54, dim(ov5640_setting_30fps_1280_960_HFOV54), camera);
+			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54, OV5640_SETTING_30FPS_1280_960_HFOV54, camera);
 			g_vcamFOV = fov;
 			break;
 
 		case 39:
-			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV39, dim(ov5640_setting_30fps_1280_960_HFOV39), camera);
+			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV39, OV5640_SETTING_30FPS_1280_960_HFOV39, camera);
 			g_vcamFOV = fov;
 			break;
 
 		case 28:
-			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV28, dim(ov5640_setting_30fps_1280_960_HFOV28), camera);
+			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV28, OV5640_SETTING_30FPS_1280_960_HFOV28, camera);
 			g_vcamFOV = fov;
 			break;
 
@@ -1493,7 +1486,7 @@ static int initMIPICamera(struct device *dev, CAM_NO camera)
 	int ret = 0;
 
 	dev_info(dev, "mipi interface\n");
-	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP, dim(ov5640_init_setting_9fps_5MP), camera);
+	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP, OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS, camera);
 	if (ret) {
 		dev_err(dev, "Failed to configure MIPI camera interface\n");
 		return ret;
@@ -1543,16 +1536,15 @@ static int initCSICamera(struct device *dev, CAM_NO camera)
 	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
-	dev_info(dev, "cam %lu, Parallell interface\n", camera);
-	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_settings_wince,
-				dim(ov5640_init_settings_wince), camera);
+	dev_info(dev, "cam %u, Parallell interface\n", camera);
+	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_settings_wince, OV5640_INIT_SETTINGS_WINCE_ELEMENTS, camera);
 	if (ret) {
 		dev_err(dev, "Failed to configure parallell csi camera interface\n");
 		return ret;
 	}
 
 	OV5640_enable_stream(pInfo, camera, false);
-	ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_15fps_640_480, dim(ov5640_setting_15fps_640_480), camera);
+	ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_15fps_640_480, OV5640_SETTINGS_15FPS_640_480, camera);
 	if (ret) {
 		dev_err(dev, "Failed to configure video mode\n");
 		return ret;
