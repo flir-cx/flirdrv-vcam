@@ -574,12 +574,6 @@ static struct reg_value night_mode_off = { 0x3a00, 0x78 };
 static struct reg_value autofocus_on = { 0x3022, 0x04 };
 static struct reg_value autofocus_off = { 0x3022, 0x00 };
 
-static int CamActive[CAM_ALL] = { TRUE, FALSE };
-
-static int g_vcamFOV;
-static CAM_NO g_camera = CAM_ALL;
-
-
 /* OV5640 Configurations copied from WINCE Gas Camera */
 /*
  * General initialization executed once at power on
@@ -1405,17 +1399,17 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 		switch (fov) {
 		case 54:
 			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54, OV5640_SETTING_30FPS_1280_960_HFOV54, camera);
-			g_vcamFOV = fov;
+			pInfo->fov = fov;
 			break;
 
 		case 39:
 			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV39, OV5640_SETTING_30FPS_1280_960_HFOV39, camera);
-			g_vcamFOV = fov;
+			pInfo->fov = fov;
 			break;
 
 		case 28:
 			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV28, OV5640_SETTING_30FPS_1280_960_HFOV28, camera);
-			g_vcamFOV = fov;
+			pInfo->fov = fov;
 			break;
 
 		default:
@@ -1470,7 +1464,7 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 	else
 		regval = &ov5640_flip_off_reg;
 
-	return OV5640_DoI2CWrite(pInfo, regval, 1, g_camera);
+	return OV5640_DoI2CWrite(pInfo, regval, 1, pInfo->camera);
 }
 
 
@@ -1594,10 +1588,10 @@ int OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
 {
 	int ret = -EIO;
 
-	ret = OV5640_set_5MP(pInfo, g_camera);
+	ret = OV5640_set_5MP(pInfo, pInfo->camera);
 	if (ret)
 		return ret;
-	ret = OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
+	ret = OV5640_set_fov(pInfo, pInfo->camera, pInfo->fov);
 	if (ret)
 		return ret;
 
@@ -1617,16 +1611,20 @@ int OV5640_Init(struct device *dev)
 
 	INIT_WORK(&pInfo->nightmode_work, nightmode_on_off_work);
 
-	if (g_camera == CAM_ALL)
+	if (pInfo->camera == CAM_ALL)
 		dev_warn(dev, "CAM_ALL setting used... should be avoided\n");
 
 	if (pInfo->cameraI2CAddress[1] == 0)	/* Only 1 active camera */
-		g_camera = CAM_1;
+		pInfo->camera = CAM_1;
 
-	if (g_camera == CAM_ALL)
+	if (pInfo->camera == CAM_ALL)
 		dev_warn(dev, "**CAM_ALL setting used... should be avoided\n");
 
-	ret = initCamera(dev, g_camera);
+	pInfo->CamActive[CAM_1] = true;
+	pInfo->CamActive[CAM_2] = false;
+
+
+	ret = initCamera(dev, pInfo->camera);
 
 	return ret;
 }
@@ -1666,7 +1664,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			VCAMIOCTLACTIVE *pVcamIoctl = (VCAMIOCTLACTIVE *) pBuf;
 
 			LOCK(pInfo);
-			pVcamIoctl->bActive = CamActive[CAM_1] || CamActive[CAM_2];
+			pVcamIoctl->bActive = pInfo->CamActive[CAM_1] || pInfo->CamActive[CAM_2];
 			dwErr = 0;
 			UNLOCK(pInfo);
 		}
@@ -1686,8 +1684,8 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			NewActive = (((VCAMIOCTLACTIVE *) pBuf)->bActive != 0);
 
 			if (res) {
-				CamActive[cam] = NewActive;
-				dev_err(dev, "CamActive for cam %d now %d\n", cam, CamActive[cam]);
+				pInfo->CamActive[cam] = NewActive;
+				dev_err(dev, "CamActive for cam %d now %d\n", cam, pInfo->CamActive[cam]);
 				dwErr = 0;
 			}
 			UNLOCK(pInfo);
@@ -1703,7 +1701,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			dwErr = pInfo->pSetTorchState(pInfo, pFlashData);
 			/* set fast exposure to compensate for led brightness */
 			if (pFlashData->bTorchOn)
-				OV5640_set_exposure(pInfo, g_camera, 0x2000);
+				OV5640_set_exposure(pInfo, pInfo->camera, 0x2000);
 
 			UNLOCK(pInfo);
 		}
@@ -1717,13 +1715,13 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			switch (pMode->eCamMode) {
 			case VCAM_STILL:
 				/* set camera to 5MP full size mode */
-				dwErr = OV5640_set_5MP(pInfo, g_camera);
+				dwErr = OV5640_set_5MP(pInfo, pInfo->camera);
 				msleep(800);
 				break;
 
 			case VCAM_DRAFT:
 				/* restore last known fov */
-				dwErr = OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
+				dwErr = OV5640_set_fov(pInfo, pInfo->camera, pInfo->fov);
 				/* must wait for auto exposure control (AEC)
 				 * and auto gain control (AGC) to adjust image brightness
 				 */
@@ -1745,23 +1743,23 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			VCAMIOCTLFOV *pVcamFOV = (VCAMIOCTLFOV *) pBuf;
 
 			LOCK(pInfo);
-			dwErr = OV5640_set_fov(pInfo, g_camera, pVcamFOV->fov);
+			dwErr = OV5640_set_fov(pInfo, pInfo->camera, pVcamFOV->fov);
 			UNLOCK(pInfo);
 		}
 		break;
 	case IOCTL_CAM_GET_FOV:
 		LOCK(pInfo);
-		((VCAMIOCTLFOV *) pBuf)->fov = g_vcamFOV;
+		((VCAMIOCTLFOV *) pBuf)->fov = pInfo->fov;
 		dwErr = 0;
 		UNLOCK(pInfo);
 		break;
 
 
 	case IOCTL_CAM_MIRROR_ON:
-		dwErr = OV5640_mirror_enable(pInfo, g_camera, TRUE);
+		dwErr = OV5640_mirror_enable(pInfo, pInfo->camera, TRUE);
 		break;
 	case IOCTL_CAM_MIRROR_OFF:
-		dwErr = OV5640_mirror_enable(pInfo, g_camera, FALSE);
+		dwErr = OV5640_mirror_enable(pInfo, pInfo->camera, FALSE);
 		break;
 	case IOCTL_CAM_FLIP_ON:
 		LOCK(pInfo);
