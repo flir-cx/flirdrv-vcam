@@ -69,7 +69,7 @@ static int vcam_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	dev->driver_data=gpDev;
+	dev_set_drvdata(dev, gpDev);
 	platform_set_drvdata(pdev, gpDev);
 	gpDev->pLinuxDevice = pdev;
 

@@ -813,7 +813,7 @@ static ssize_t enable_stream_store(struct device *dev,
 			    const char *buf, size_t count)
 {
 	unsigned long val;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
@@ -827,7 +827,7 @@ static ssize_t flip_store(struct device *dev,
 			    const char *buf, size_t count)
 {
 	unsigned long val;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
@@ -855,7 +855,7 @@ static ssize_t mirror_enable_store(struct device *dev,
 			    const char *buf, size_t count)
 {
 	unsigned long val;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
@@ -867,7 +867,7 @@ static ssize_t mirror_enable_store(struct device *dev,
 static ssize_t autofocus_enable_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
@@ -880,7 +880,7 @@ static ssize_t autofocus_enable_store(struct device *dev, struct device_attribut
 static ssize_t set_fov_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
@@ -918,7 +918,7 @@ static const struct attribute_group ov5640_groups = {
 int OV5640_create_sysfs_attributes(struct device *dev)
 {
 	int ret;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 
 	ret = sysfs_create_group(&pdev->dev.kobj, &ov5640_groups);
@@ -930,7 +930,7 @@ int OV5640_create_sysfs_attributes(struct device *dev)
 
 void OV5640_remove_sysfs_attributes(struct device *dev)
 {
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+  PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	sysfs_remove_group(&pdev->dev.kobj, &ov5640_groups);
 }
@@ -1504,7 +1504,7 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
  */
 static void OV5640_Testpattern_Enable(struct device *dev, bool on)
 {
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+  PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (on) {
 		dev_info(dev, "Enable testpattern\n");
@@ -1546,7 +1546,7 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
  */
 static int initMIPICamera(struct device *dev, CAM_NO camera)
 {
-	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
+  PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
 	dev_info(dev, "mipi interface\n");
@@ -1597,7 +1597,7 @@ static int initMIPICamera(struct device *dev, CAM_NO camera)
  */
 static int initCSICamera(struct device *dev, CAM_NO camera)
 {
-	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
+	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
 	dev_info(dev, "cam %lu, Parallell interface\n", camera);
@@ -1629,7 +1629,7 @@ static int initCSICamera(struct device *dev, CAM_NO camera)
  */
 static int initCamera(struct device *dev, CAM_NO camera)
 {
-	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
+	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
 	/* Read the OTP memory before the initial configuration. This
@@ -1677,7 +1677,7 @@ int OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
  */
 int OV5640_Init(struct device *dev)
 {
-	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
+	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
 	INIT_WORK(&pInfo->nightmode_work, nightmode_on_off_work);

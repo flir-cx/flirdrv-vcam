@@ -51,7 +51,7 @@ DWORD EocoInitHW(struct device *dev)
 {
 	int ret = 0;
 
-	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
+	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 
 	pInfo->hI2C = i2c_get_adapter(0);
@@ -132,7 +132,7 @@ out_init:
 
 DWORD EocoDeInitHW(struct device *dev)
 {
-	PCAM_HW_INDEP_INFO pInfo = dev->driver_data;
+	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	OV5640_remove_sysfs_attributes(dev);
 	/* OV5640_DeInit(pInfo); */
 	EnablePower(pInfo, FALSE);
@@ -251,20 +251,20 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 
 static int eodp_vcam_enable_clk(struct device *dev, int on)
 {
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+  PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 	return gpio_direction_output(pInfo->clk_en_gpio, on);
 }
 
 static int eodp_vcam_powerdown(struct device *dev, int on)
 {
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+  PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 	return gpio_direction_output(pInfo->pwdn_gpio, on);
 }
 
 
 static int eodp_vcam_reset(struct device *dev, int on)
 {
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev->driver_data;
+  PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 	return gpio_direction_output(pInfo->reset_gpio, on);
 }
 
