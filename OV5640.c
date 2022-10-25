@@ -580,20 +580,20 @@ static struct reg_value autofocus_off = { 0x3022, 0x00 };
  *
  *
  */
-#define OV5640_INIT_SETTINGS_WINCE_ELEMENTS 212
-static struct reg_value ov5640_init_settings_wince[OV5640_INIT_SETTINGS_WINCE_ELEMENTS] = {
-	{0x3103, 0x11}, //SCCB system ctrl
+#define OV5640_INIT_INTERFACE_CSI_ELEMENTS 212
+static struct reg_value ov5640_init_interface_csi[OV5640_INIT_INTERFACE_CSI_ELEMENTS] = {
+	{0x3103, 0x11}, //SCCB system control
 	{0x3008, 0x42}, //System root divider
-	{0x3103, 0x03}, //SCCB system ctrl
-	{0x3017, 0xff}, //VSYNC I/O contril
+	{0x3103, 0x03}, //SCCB system control
+	{0x3017, 0xff}, //VSYNC I/O control
 	{0x3018, 0xff}, //Pad output enable
 	{0x3034, 0x1a}, //SC PLL control
 	{0x3035, 0x21}, //System clock divider
 	{0x3037, 0x13}, //PLL pre-divider
 	{0x3108, 0x01}, //System root divider
-	{0x302d, 0x60}, //System ctrl
+	{0x302d, 0x60}, //System control
 
-	{0x3630, 0x36}, {0x3631, 0x0e},//undoc start
+	{0x3630, 0x36}, {0x3631, 0x0e}, //undoc start
 	{0x3632, 0xe2}, {0x3633, 0x12},
 	{0x3621, 0xe0}, {0x3704, 0xa0},
 	{0x3703, 0x5a}, {0x3715, 0x78},
@@ -1528,7 +1528,7 @@ static int initCSICamera(struct device *dev, CAM_NO camera)
 	int ret = 0;
 
 	dev_info(dev, "cam %u, Parallell interface\n", camera);
-	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_settings_wince, OV5640_INIT_SETTINGS_WINCE_ELEMENTS, camera);
+	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_interface_csi, OV5640_INIT_INTERFACE_CSI_ELEMENTS, camera);
 	if (ret) {
 		dev_err(dev, "Failed to configure parallell csi camera interface\n");
 		return ret;
