@@ -1390,38 +1390,35 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 	int ret;
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
-	if (of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL)) {
-		dev_err(dev, "No FOV change settings available\n");
-		ret = -EPERM;
-	} else {
-		OV5640_enable_stream(pInfo, camera, FALSE);
 
-		switch (fov) {
-		case 54:
-			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54, OV5640_SETTING_30FPS_1280_960_HFOV54, camera);
-			pInfo->fov = fov;
-			break;
+	OV5640_enable_stream(pInfo, camera, FALSE);
 
-		case 39:
-			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV39, OV5640_SETTING_30FPS_1280_960_HFOV39, camera);
-			pInfo->fov = fov;
-			break;
+	switch (fov) {
+	case 54:
+		ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54,
+					dim(ov5640_setting_30fps_1280_960_HFOV54), camera);
+		break;
 
-		case 28:
-			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV28, OV5640_SETTING_30FPS_1280_960_HFOV28, camera);
-			pInfo->fov = fov;
-			break;
+	case 39:
+		ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV39,
+				      dim(ov5640_setting_30fps_1280_960_HFOV39), camera);
+		break;
 
-		default:
-			dev_err(dev, "VCAM: Unsupported fov: %d\n", fov);
-			ret = ERROR_NOT_SUPPORTED;
-		}
+	case 28:
+		ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV28,
+				      dim(ov5640_setting_30fps_1280_960_HFOV28), camera);
+		break;
 
-		OV5640_enable_stream(pInfo, camera, TRUE);
-		pInfo->cam = camera;
-		schedule_work(&pInfo->nightmode_work);
+	default:
+		dev_err(dev, "VCAM: Unsupported fov: %d\n", fov);
+		ret = ERROR_NOT_SUPPORTED;
+		break;
 	}
 
+	OV5640_enable_stream(pInfo, camera, TRUE);
+
+	pInfo->cam = camera;
+	schedule_work(&pInfo->nightmode_work);
 	return ret;
 }
 
