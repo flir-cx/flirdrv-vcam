@@ -1094,7 +1094,7 @@ static int ov5640_get_sensor_models(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 		ret = ov5640_get_otp_memory(pInfo, otp_memory, OV5640_OTP_END_ADDR - OV5640_OTP_START_ADDR + 1, cam);
 		if (ret) {
 			dev_err(dev, "ov5640_get_otp_memory() failed\n");
-			continue;
+			return ret;
 		}
 
 		/* The sensor model can be determined by the content of the
@@ -1391,6 +1391,7 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
+	ov5640_set_sensor_model_conf(pInfo, camera);
 	OV5640_enable_stream(pInfo, camera, FALSE);
 
 	switch (fov) {
@@ -1563,7 +1564,10 @@ static int initCamera(struct device *dev, CAM_NO camera)
 	 * initial settings configuration is loaded the sensor can
 	 * fail to start to stream frames.
 	 */
-	ov5640_get_sensor_models(pInfo, camera);
+	if (ov5640_get_sensor_models(pInfo, camera)) {
+		dev_err(dev, "Failed to get sensor models\n");
+		return -1;
+	}
 
 	if (of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL)) {
 		ret = initCSICamera(dev, camera);
