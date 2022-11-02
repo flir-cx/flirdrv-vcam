@@ -41,7 +41,7 @@ static int VCAM_Open(struct inode *inode, struct file *filp);
 static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 			 DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
 
-#ifndef CONFIG_OF
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 19, 0)
 static struct platform_device *vcam_platform_device;
 #endif
 static PCAM_HW_INDEP_INFO gpDev;
@@ -97,7 +97,7 @@ static int vcam_probe(struct platform_device *pdev)
 		ret = EvcoInitHW(gpDev);
 	} else
 #endif
-#ifndef CONFIG_OF
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 19, 0)
 		/* if (cpu_is_mx51()) */
 		/*      ret = PicoInitHW(gpDev); */
 		/* else if (cpu_is_imx6s()) */
@@ -167,7 +167,7 @@ static int VCAM_Init(void)
 {
 	int ret = -EIO;
 
-#ifndef CONFIG_OF
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 19, 0)
 	vcam_platform_device = platform_device_alloc("vcam", 1);
 	if (!vcam_platform_device) {
 		pr_err("VCAM: Error adding allocating device\n");
@@ -185,7 +185,7 @@ static int VCAM_Init(void)
 	ret = platform_driver_register(&vcam_device_driver);
 	if (ret < 0) {
 		pr_err("VCAM: Error adding platform driver\n");
-#ifndef CONFIG_OF
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 19, 0)
 		platform_device_unregister(vcam_platform_device);
 #endif
 	}
@@ -196,7 +196,7 @@ static int VCAM_Init(void)
 static void VCAM_Deinit(void)
 {
 	platform_driver_unregister(&vcam_device_driver);
-#ifndef CONFIG_OF
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 19, 0)
 	platform_device_unregister(vcam_platform_device);
 #endif
 }
