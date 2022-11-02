@@ -716,41 +716,6 @@ static struct reg_value ov5640_init_interface_csi[OV5640_INIT_INTERFACE_CSI_ELEM
 	{0x3008, 0x02}, //Enable PCLK
 };
 
-#define OV5640_SETTINGS_15FPS_640_480 48
-static struct reg_value ov5640_setting_15fps_640_480[OV5640_SETTINGS_15FPS_640_480] = {
-    //VGA(YUV) 15fps
-	//Crop 2304 x 1536 output 640 x 480 setup
-	{0x3212, 0x01}, //Enable group 1
-	{0x3036, 0xbf}, //PLL multiplier
-	{0x3a00, 0x7c}, //AEC ctrl, night mode
-	{0x3821, 0x01}, //Mirror and binning
-	{0x3814, 0x31}, {0x3815, 0x31}, //Timing x and y inc
-	{0x3800, 0x00}, {0x3801, 0x99}, // X address start = 0x99
-	{0x3802, 0x00}, {0x3803, 0x6c}, // Y address start = 0x6c
-	{0x3804, 0x09}, {0x3805, 0x98}, // X address end   = 0x998
-	{0x3806, 0x07}, {0x3807, 0x2b}, // Y address end   = 0x72b
-	{0x3808, 0x02}, {0x3809, 0x80}, // DVP width  output size = 0x280 (640)
-	{0x380a, 0x01}, {0x380b, 0xe0}, // DVP height output size = 0x1e0 (480)
-	{0x380c, 0x0b}, {0x380d, 0x00}, // Total horizontal size = 0x768
-	{0x380e, 0x07}, {0x380f, 0x00}, // Total vertical size  =  0x3d8
-	{0x3810, 0x00}, {0x3811, 0x08}, // ISP horizontal offset = 0x8
-	{0x3812, 0x00}, {0x3813, 0x04}, // ISP vertical   offset = 0x4
-
-	{0x3618, 0x00}, {0x3612, 0x29}, //undoc
-	{0x3708, 0x66}, {0x3709, 0x12},
-	{0x370c, 0x03}, {0x4837, 0x22},
-
-	{0x3a02, 0x09}, {0x3a03, 0xff}, //AEC Max Expo (60 Hz)
-	{0x3a0e, 0x03}, {0x3a0d, 0x04}, //AEC ctrl
-	{0x3a14, 0x09}, {0x3a15, 0xff}, //AEC Max Expo (50 Hz)
-	{0x3000, 0x00}, {0x3002, 0x1c}, //System reset
-	{0x3004, 0xff}, {0x3006, 0xc3}, //Clock enable
-	{0x5684, 0x05}, {0x5685, 0x00}, //AVG x-window reg
-	{0x5686, 0x03}, {0x5687, 0xc0}, //AVG y-window reg
-	{0x3212, 0x11}, //End group 1
-	{0x3212, 0xa1}, //Lanch group 1
-};
-
 /* attribute sysfs files */
 static ssize_t enable_stream_store(struct device *dev,
 			    struct device_attribute *attr,
@@ -1536,7 +1501,8 @@ static int initCSICamera(struct device *dev, CAM_NO camera)
 	}
 
 	OV5640_enable_stream(pInfo, camera, false);
-	ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_15fps_640_480, OV5640_SETTINGS_15FPS_640_480, camera);
+	//Choose a default setting, on basecamp (with mipi sensor) It seems to be 5Mp setting though...
+	ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54, OV5640_SETTING_30FPS_1280_960_HFOV54, camera);
 	if (ret) {
 		dev_err(dev, "Failed to configure video mode\n");
 		return ret;
