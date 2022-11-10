@@ -1476,15 +1476,11 @@ static int initCSICamera(struct device *dev, CAM_NO camera)
 		return ret;
 	}
 
-	OV5640_enable_stream(pInfo, camera, false);
-	//Choose a default setting, on basecamp (with mipi sensor) It seems to be 5Mp setting though...
-	ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54, OV5640_SETTING_30FPS_1280_960_HFOV54, camera);
+	ret = OV5640_set_fov(pInfo, camera, 54);
 	if (ret) {
 		dev_err(dev, "Failed to configure video mode\n");
 		return ret;
 	}
-
-	OV5640_enable_stream(pInfo, camera, true);
 
 	return 0;
 }
