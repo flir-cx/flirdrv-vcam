@@ -1443,34 +1443,10 @@ static int initMIPICamera(struct device *dev, CAM_NO camera)
 	int ret = 0;
 
 	dev_info(dev, "mipi interface\n");
-	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP, OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS, camera);
+	ret = OV5640_set_5MP(pInfo, camera);
 	if (ret) {
 		dev_err(dev, "Failed to configure MIPI camera interface\n");
 		return ret;
-	}
-
-	/* Write model specific configuration */
-	ov5640_set_sensor_model_conf(pInfo, camera);
-
-	/* Set default flip */
-	ret = OV5640_FlipImage(pInfo, FALSE);
-	if (ret) {
-		dev_err(dev, "Failed in call OV5640_FlipImage\n");
-		return ret;
-	}
-
-	ret = OV5640_mirror_enable(pInfo, camera, pInfo->flipped_sensor);
-	if (ret) {
-		dev_err(dev, "Failed in call OV5640_mirror_enable\n");
-		return ret;
-	}
-
-	if (pInfo->edge_enhancement) {
-		ret = OV5640_DoI2CWrite(pInfo, &ov5640_edge_enhancement, 1, camera);
-		if (ret) {
-			dev_err(dev, "Failed in call OV5640_DoI2CWrite..\n");
-			return ret;
-		}
 	}
 
 	ret = OV5640_set_fov(pInfo, camera, 54);
