@@ -1383,8 +1383,11 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 
 	OV5640_enable_stream(pInfo, camera, TRUE);
 
-	pInfo->cam = camera;
-	schedule_work(&pInfo->nightmode_work);
+	if (ret == 0) {
+		pInfo->fov = fov;
+		pInfo->cam = camera;
+		schedule_work(&pInfo->nightmode_work);
+	}
 	return ret;
 }
 
