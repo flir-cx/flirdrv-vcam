@@ -20,6 +20,7 @@
 #include <linux/of.h>
 #include <linux/regulator/consumer.h>
 #include <linux/regulator/of_regulator.h>
+#include "OV5640.h"
 
 // Definitions
 
@@ -113,11 +114,16 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 
 	dev_err(dev, "Registered vcam_clk_en-gpio\n");
 	EnablePower(pInfo, TRUE);
+	ret = OV5640_create_sysfs_attributes(dev);
 	return ret;
 }
 
 DWORD EvcoDeInitHW(PCAM_HW_INDEP_INFO pInfo)
 {
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
+
+	OV5640_remove_sysfs_attributes(dev);
 	EnablePower(pInfo, FALSE);
 	gpio_free(pInfo->clk_en_gpio);
 	gpio_free(pInfo->pwdn_gpio);
