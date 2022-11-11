@@ -85,7 +85,12 @@ static int vcam_probe(struct platform_device *pdev)
 
 	// Init hardware
 #ifdef CONFIG_OF
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 19, 0)
+	gpDev->node = of_find_compatible_node(NULL, NULL, "flir,vcam");
+#else
 	gpDev->node = dev->of_node;
+#endif
+
 
 	if (of_find_property(gpDev->node, "flip-image", NULL))
 		gpDev->flipped_sensor = 1;
