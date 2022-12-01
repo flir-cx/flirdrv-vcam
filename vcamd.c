@@ -214,38 +214,6 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 	struct device *dev = &pdev->dev;
 
 	switch (Ioctl) {
-	case IOCTL_CAM_GET_TEST:
-	case IOCTL_CAM_SET_TEST:
-	case IOCTL_CAM_GET_ACTIVE:
-	case IOCTL_CAM_SET_ACTIVE:
-	case IOCTL_CAM_SET_2ND_ACTIVE:
-	case IOCTL_CAM_SET_FLASH:
-	case IOCTL_CAM_SET_FOV:
-	case IOCTL_CAM_GET_FOV:
-	case IOCTL_CAM_SET_CAMMODE:
-	case IOCTL_CAM_INIT:
-	case IOCTL_CAM_GRAB_STILL:
-	case IOCTL_CAM_MIRROR_ON:
-	case IOCTL_CAM_MIRROR_OFF:
-	case IOCTL_CAM_FLIP_ON:
-	case IOCTL_CAM_FLIP_OFF:
-		switch (pInfo->eCamModel) {
-			/* case MT9P111: */
-			/*      return MT9P111_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
-
-			/* case OV7740: */
-			/*      return OV7740_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
-
-		case OV5640:
-			return OV5640_IOControl(pInfo, Ioctl, pBuf, pUserBuf);
-
-		default:
-			dwErr = ERROR_NOT_SUPPORTED;
-			dev_err(dev, "CAM_Init - camera model undetermined!\n");
-			break;
-		}
-		break;
-
 	case IOCTL_CAM_GET_FLASH:
 		{
 			VCAMIOCTLFLASH *pFlashData = (VCAMIOCTLFLASH *) pBuf;
@@ -287,8 +255,21 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 		break;
 
 	default:
-		dev_err(dev, "FAD: Unsupported IOCTL code %lX\n", Ioctl);
-		dwErr = ERROR_NOT_SUPPORTED;
+		switch (pInfo->eCamModel) {
+			/* case MT9P111: */
+			/*      return MT9P111_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
+
+			/* case OV7740: */
+			/*      return OV7740_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
+
+		case OV5640:
+			return OV5640_IOControl(pInfo, Ioctl, pBuf, pUserBuf);
+
+		default:
+			dwErr = ERROR_NOT_SUPPORTED;
+			dev_err(dev, "CAM_Init - camera model undetermined!\n");
+			break;
+		}
 		break;
 	}
 
