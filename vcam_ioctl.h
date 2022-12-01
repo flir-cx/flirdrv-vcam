@@ -1,0 +1,117 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
+/*
+ *   VCAM Ioctl calls
+ *
+ *
+ * Copyright: FLIR Systems AB
+ */
+
+#ifndef __VCAM_IOCTL_H__
+#define __VCAM_IOCTL_H__
+
+// Definitions
+
+typedef struct _VCAMIOCTLTEST {
+	BOOL bTestMode;		// TRUE = Test mode, FALSE = normal image
+} VCAMIOCTLTEST, *PVCAMIOCTLTEST;
+
+typedef struct _VCAMIOCTLFOV {
+	int fov;		// Vcam FOV
+} VCAMIOCTLFOV, *PVCAMIOCTLFOV;
+
+typedef struct _VCAMIOCTLFLASH {
+	BOOL bTorchOn;		// TRUE = Torch is ON
+	BOOL bFlashOn;		// TRUE = Flash activated one frame
+} VCAMIOCTLFLASH, *PVCAMIOCTLFLASH;
+
+typedef struct _VCAMIOCTLACTIVE {
+	BOOL bActive;		// TRUE = Visual camera is ON
+} VCAMIOCTLACTIVE, *PVCAMIOCTLACTIVE;
+
+typedef enum {
+	UNKNOWN = 0,
+	MCB882P,
+	MT9M111,
+	MT9T111,
+	MT9P111,		// PT    camera - 5Mpix
+	OV7740,			// Astra camera
+	OV5640			// Rocky camera - 5Mpix
+} VCAM_CamModel;
+
+typedef struct _VCAMIOCTLCAMMODEL {
+	VCAM_CamModel eCamModel;
+} VCAMIOCTLCAMMODEL, *PVCAMIOCTLCAMMODEL;
+
+typedef enum {
+	VCAM_UNDEFINED = 0,
+	VCAM_RESET,
+	VCAM_DRAFT,
+	VCAM_STILL
+} VCAM_Cam_Mode;
+
+typedef struct _VCAMIOCTLCAMMODE {
+	VCAM_Cam_Mode eCamMode;
+} VCAMIOCTLCAMMODE, *PVCAMIOCTLCAMMODE;
+
+typedef enum {
+	VCAM_SMALL_YCbCr,
+	VCAM_LARGE_YCbCr,
+	VCAM_SMALL_JPEG,
+	VCAM_LARGE_JPEG,
+} VCAM_StillMode;
+
+typedef struct _VCAMIOCTLSTILLMODE {
+	VCAM_StillMode eStillMode;
+} VCAMIOCTLSTILLMODE, *PVCAMIOCTLSTILLMODE;
+
+typedef struct _VCAMIOCTLFOCUS {
+	BOOL bAutoFocus;	// TRUE if auto focus requested
+	int lensPos;		// focus position for manual (non-autofocus) focus
+} VCAMIOCTLFOCUS, *PVCAMIOCTLFOCUS;
+
+// Public defines:
+
+// IOCTL codes.
+#define CAM_SERVICE						0x8100
+
+#define VCAM_IOCTL_W(code,type)		_IOW('v', code, type)
+#define VCAM_IOCTL_R_W(code,type)	_IOR('v', code, type)
+#define VCAM_IOCTL_R(code,type)		_IOR('v', code, type)
+#define VCAM_IOCTL_N(code)		_IO('v', code)
+
+#define IOCTL_CAM_GET_TEST		VCAM_IOCTL_R(1, VCAMIOCTLTEST)
+#define IOCTL_CAM_SET_TEST		VCAM_IOCTL_W(2, VCAMIOCTLTEST)
+
+#define IOCTL_CAM_GET_FLASH		VCAM_IOCTL_R(3, VCAMIOCTLFLASH)
+#define IOCTL_CAM_SET_FLASH		VCAM_IOCTL_W(4, VCAMIOCTLFLASH)
+
+#define IOCTL_CAM_GET_ACTIVE		VCAM_IOCTL_R(5, VCAMIOCTLACTIVE)
+#define IOCTL_CAM_SET_ACTIVE		VCAM_IOCTL_W(6, VCAMIOCTLACTIVE)
+
+#define IOCTL_CAM_GET_CAM_MODEL		VCAM_IOCTL_R_W(7, VCAMIOCTLCAMMODEL)
+
+#define IOCTL_CAM_INIT			VCAM_IOCTL_N(8)
+
+#define IOCTL_CAM_SET_CAMMODE		VCAM_IOCTL_W(9, VCAMIOCTLCAMMODE)
+#define IOCTL_CAM_GET_CAMMODE		VCAM_IOCTL_R_W(10, VCAMIOCTLCAMMODE)
+
+#define IOCTL_CAM_GRAB_STILL		VCAM_IOCTL_N(11)
+
+#define IOCTL_CAM_SET_FOCUS		VCAM_IOCTL_W(12, VCAMIOCTLFOCUS)
+#define IOCTL_CAM_GET_FOCUS		VCAM_IOCTL_W(13, VCAMIOCTLFOCUS)
+
+#define IOCTL_CAM_SET_2ND_ACTIVE	VCAM_IOCTL_W(14, VCAMIOCTLACTIVE)
+
+#define IOCTL_CAM_GET_FOV		VCAM_IOCTL_R(15, VCAMIOCTLFOV)
+#define IOCTL_CAM_SET_FOV		VCAM_IOCTL_W(16, VCAMIOCTLFOV)
+
+#define IOCTL_CAM_SUSPEND		VCAM_IOCTL_N(17)
+#define IOCTL_CAM_RESUME		VCAM_IOCTL_N(18)
+
+#define IOCTL_CAM_MIRROR_ON		VCAM_IOCTL_N(19)
+#define IOCTL_CAM_MIRROR_OFF		VCAM_IOCTL_N(20)
+
+#define IOCTL_CAM_FLIP_ON		VCAM_IOCTL_N(21)
+#define IOCTL_CAM_FLIP_OFF		VCAM_IOCTL_N(22)
+
+#endif /* __VCAM_IOCTL_H__ */

@@ -11,7 +11,7 @@
 #ifndef _VCAM_INTERNAL_H_
 #define _VCAM_INTERNAL_H_
 
-#include "vcam.h"
+#include "vcam_ioctl.h"
 #include "flir_kernel_os.h"
 
 // Definitions
