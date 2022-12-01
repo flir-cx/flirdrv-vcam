@@ -786,19 +786,24 @@ static ssize_t autofocus_enable_store(struct device *dev, struct device_attribut
 }
 
 
-static ssize_t set_fov_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t fov_store(struct device *dev, struct device_attribute *attr,
+			 const char *buf, size_t count)
 {
 	unsigned long val;
 	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
-	if (val != 54 && val != 39 && val != 28) {
-		dev_err(dev, "Invalid FOV value, use 54, 39 or 28\n");
-		return -EINVAL;
-	}
 	OV5640_set_fov(pInfo, CAM_1, val);
 	return count;
+}
+
+static ssize_t fov_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
+
+	sprintf(buf, "VCAM OV5640 FOV: (54 39 28) %i\n", pInfo->fov);
+	return strlen(buf);
 }
 
 static DEVICE_ATTR(enable_stream, 0200, NULL, enable_stream_store);
@@ -806,17 +811,16 @@ static DEVICE_ATTR(flip, 0200, NULL, flip_store);
 static DEVICE_ATTR(testpattern, 0200, NULL, testpattern_store);
 static DEVICE_ATTR(mirror_enable, 0200, NULL, mirror_enable_store);
 static DEVICE_ATTR(autofocus_enable, 0200, NULL, autofocus_enable_store);
-static DEVICE_ATTR(set_fov, 0200, NULL, set_fov_store);
-
+static DEVICE_ATTR(fov, 0644, fov_show, fov_store);
 
 static struct attribute *ov5640_attrs[] = {
-  &dev_attr_enable_stream.attr,
-  &dev_attr_flip.attr,
-  &dev_attr_testpattern.attr,
-  &dev_attr_mirror_enable.attr,
-  &dev_attr_autofocus_enable.attr,
-  &dev_attr_set_fov.attr,
-  NULL
+	&dev_attr_enable_stream.attr,
+	&dev_attr_flip.attr,
+	&dev_attr_testpattern.attr,
+	&dev_attr_mirror_enable.attr,
+	&dev_attr_autofocus_enable.attr,
+	&dev_attr_fov.attr,
+	NULL
 };
 
 static const struct attribute_group ov5640_groups = {
