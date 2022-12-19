@@ -17,6 +17,8 @@
 #include <linux/i2c.h>
 #include "OV5640.h"
 
+static int initCSICamera(struct device *dev, CAM_NO camera);
+static int initCamera(struct device *dev, CAM_NO camera);
 
 /* Definition of DT node name, construction is error prone, so avoiding some
  * error possibilities by using definition
@@ -1351,34 +1353,34 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
  *
  * returns 0 on success
  *         <0, (or >0) on  error...
- *         -EPERM, setting not allowed on Eowyn platform..
+ *         ERROR_NOT_SUPPORTED, setting not allowed..
  *
  */
 static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 {
-	int ret;
+	int ret = ERROR_NOT_SUPPORTED;
 	int elements;
 	struct reg_value *setting;
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
-	ov5640_set_sensor_model_conf(pInfo, camera);
-	OV5640_enable_stream(pInfo, camera, FALSE);
-
 	switch (fov) {
 	case 54:
 		setting = ov5640_setting_30fps_1280_960_HFOV54;
 		elements = OV5640_SETTING_30FPS_1280_960_HFOV54_ELEMENTS;
+		ret = 0;
 		break;
 
 	case 39:
 		setting = ov5640_setting_30fps_1280_960_HFOV39;
 		elements = OV5640_SETTING_30FPS_1280_960_HFOV39_ELEMENTS;
+		ret = 0;
 		break;
 
 	case 28:
 		setting = ov5640_setting_30fps_1280_960_HFOV28;
 		elements = OV5640_SETTING_30FPS_1280_960_HFOV28_ELEMENTS;
+		ret = 0;
 		break;
 
 	default:
@@ -1386,14 +1388,20 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 		ret = ERROR_NOT_SUPPORTED;
 		break;
 	}
-
-	OV5640_enable_stream(pInfo, camera, TRUE);
-
 	if (ret == 0) {
-		pInfo->fov = fov;
-		pInfo->cam = camera;
-		schedule_work(&pInfo->nightmode_work);
+		dev_info(dev, "Change fov to %i\n", fov);
+		ov5640_set_sensor_model_conf(pInfo, camera);
+		OV5640_enable_stream(pInfo, camera, FALSE);
+		ret = OV5640_DoI2CWrite(pInfo, setting, elements, camera);
+		OV5640_enable_stream(pInfo, camera, TRUE);
+
+		if (ret == 0) {
+			pInfo->fov = fov;
+			pInfo->cam = camera;
+			schedule_work(&pInfo->nightmode_work);
+		}
 	}
+
 	return ret;
 }
 
