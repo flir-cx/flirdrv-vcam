@@ -1456,19 +1456,13 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
  */
 static int initMIPICamera(struct device *dev, CAM_NO camera)
 {
-  PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
+	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
 	dev_info(dev, "mipi interface\n");
 	ret = OV5640_set_5MP(pInfo, camera);
 	if (ret) {
 		dev_err(dev, "Failed to configure MIPI camera interface\n");
-		return ret;
-	}
-
-	ret = OV5640_set_fov(pInfo, camera, 54);
-	if (ret) {
-		dev_err(dev, "Failed in call OV5640_set_fov\n");
 		return ret;
 	}
 
@@ -1490,12 +1484,6 @@ static int initCSICamera(struct device *dev, CAM_NO camera)
 	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_interface_csi, OV5640_INIT_INTERFACE_CSI_ELEMENTS, camera);
 	if (ret) {
 		dev_err(dev, "Failed to configure parallell csi camera interface\n");
-		return ret;
-	}
-
-	ret = OV5640_set_fov(pInfo, camera, 54);
-	if (ret) {
-		dev_err(dev, "Failed to configure video mode\n");
 		return ret;
 	}
 
@@ -1543,14 +1531,14 @@ static int initCamera(struct device *dev, CAM_NO camera)
 int OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
 {
 	int ret = -EIO;
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
 
 	ret = OV5640_set_5MP(pInfo, pInfo->camera);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "Failed to reinitialize camera\n");
 		return ret;
-	ret = OV5640_set_fov(pInfo, pInfo->camera, pInfo->fov);
-	if (ret)
-		return ret;
-
+	}
 	return ret;
 }
 
@@ -1579,8 +1567,13 @@ int OV5640_Init(struct device *dev)
 	pInfo->CamActive[CAM_1] = true;
 	pInfo->CamActive[CAM_2] = false;
 
-
 	ret = initCamera(dev, pInfo->camera);
+	//TODO add if ret...
+	ret = OV5640_set_fov(pInfo, pInfo->camera, 54);
+	if (ret) {
+		dev_err(dev, "Failed in call OV5640_set_fov\n");
+		return ret;
+	}
 
 	return ret;
 }
