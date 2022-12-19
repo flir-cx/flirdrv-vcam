@@ -394,8 +394,8 @@ static struct reg_value ov5640_edge_enhancement = { 0x5302, 0x24 };	// Sigma inc
  *
  * vcam fov=55 used with IR lens fov=45
  */
-#define OV5640_SETTING_30FPS_1280_960_HFOV54 75
-static struct reg_value ov5640_setting_30fps_1280_960_HFOV54[OV5640_SETTING_30FPS_1280_960_HFOV54] = {
+#define OV5640_SETTING_30FPS_1280_960_HFOV54_ELEMENTS 75
+static struct reg_value ov5640_setting_30fps_1280_960_HFOV54[OV5640_SETTING_30FPS_1280_960_HFOV54_ELEMENTS] = {
 	{ 0x3008, 0x42 },
 	{ 0x3035, 0x21 }, { 0x3036, 0x5c }, { 0x3c07, 0x07 },
 	{ 0x3c09, 0x1c }, { 0x3c0a, 0x9c }, { 0x3c0b, 0x40 },
@@ -451,8 +451,8 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV54[OV5640_SETTING_30FP
  *
  * vcam fov=39 used with IR lens fov=28
  */
-#define OV5640_SETTING_30FPS_1280_960_HFOV39 75
-static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[OV5640_SETTING_30FPS_1280_960_HFOV39] = {
+#define OV5640_SETTING_30FPS_1280_960_HFOV39_ELEMENTS 75
+static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[OV5640_SETTING_30FPS_1280_960_HFOV39_ELEMENTS] = {
 	{ 0x3008, 0x42 },
 	{ 0x3035, 0x12 }, { 0x3036, 0x60 }, { 0x3c07, 0x07 },
 	{ 0x3c09, 0x1c }, { 0x3c0a, 0x9c }, { 0x3c0b, 0x40 },
@@ -509,8 +509,8 @@ static struct reg_value ov5640_setting_30fps_1280_960_HFOV39[OV5640_SETTING_30FP
  * vcam fov=28 used with IR lens fov=12
  *
  */
-#define OV5640_SETTING_30FPS_1280_960_HFOV28 75
-static struct reg_value ov5640_setting_30fps_1280_960_HFOV28[OV5640_SETTING_30FPS_1280_960_HFOV28] = {
+#define OV5640_SETTING_30FPS_1280_960_HFOV28_ELEMENTS 75
+static struct reg_value ov5640_setting_30fps_1280_960_HFOV28[OV5640_SETTING_30FPS_1280_960_HFOV28_ELEMENTS] = {
 	{ 0x3008, 0x42 },
 	{ 0x3035, 0x21 }, { 0x3036, 0x5c }, { 0x3c07, 0x07 },
 	{ 0x3c09, 0x1c }, { 0x3c0a, 0x9c }, { 0x3c0b, 0x40 },
@@ -1357,6 +1357,8 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 {
 	int ret;
+	int elements;
+	struct reg_value *setting;
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
@@ -1365,18 +1367,18 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 
 	switch (fov) {
 	case 54:
-		ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV54,
-					dim(ov5640_setting_30fps_1280_960_HFOV54), camera);
+		setting = ov5640_setting_30fps_1280_960_HFOV54;
+		elements = OV5640_SETTING_30FPS_1280_960_HFOV54_ELEMENTS;
 		break;
 
 	case 39:
-		ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV39,
-				      dim(ov5640_setting_30fps_1280_960_HFOV39), camera);
+		setting = ov5640_setting_30fps_1280_960_HFOV39;
+		elements = OV5640_SETTING_30FPS_1280_960_HFOV39_ELEMENTS;
 		break;
 
 	case 28:
-		ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_30fps_1280_960_HFOV28,
-				      dim(ov5640_setting_30fps_1280_960_HFOV28), camera);
+		setting = ov5640_setting_30fps_1280_960_HFOV28;
+		elements = OV5640_SETTING_30FPS_1280_960_HFOV28_ELEMENTS;
 		break;
 
 	default:
