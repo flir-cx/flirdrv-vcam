@@ -868,7 +868,7 @@ static struct reg_value autofocus_off = { 0x3022, 0x00 };
 
 static int CamActive[CAM_ALL] = { TRUE, FALSE };
 
-static int g_vcamFOV;
+static int g_vcamFOV = 54;
 static CAM_NO g_camera = CAM_ALL;
 
 
@@ -1587,7 +1587,6 @@ static void nightmode_on_off_work(struct work_struct *work)
  * returns 0 on success
  *         <0, (or >0) on  error...
  *
- * This function is *probably* not supposed to work for Eowyn...
  * sets modes ov5640_init_settings_9fps_5MP
  *            ov5640_edge_enhancement
  *            OV5640_FlipImage      - default flip of sensor??
@@ -1603,15 +1602,13 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 
 	OV5640_enable_stream(pInfo, camera, FALSE);
 	if (of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL)) {
+		dev_info(dev, "Activating parallell 5MP mode...\n");
 		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_5MP,
 					OV5640_INIT_SETTING_5MP_ELEMENTS, camera);
 		if (ret) {
 			dev_err(dev, "Failed to call OV5640_DoI2CWrite\n");
 			return ret;
 		}
-
-		dev_err(dev, "Activating 5MP mode...\n");
-
 	} else {
 		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP, OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS, camera);
 		if (ret) {
@@ -1819,6 +1816,10 @@ static int initCamera(struct device *dev, CAM_NO camera)
 		ret = initMIPICamera(dev, camera);
 	}
 
+	ret = OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
+	if (ret)
+		return ret;
+
 	return ret;
 }
 
@@ -1951,6 +1952,9 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 
 			case VCAM_DRAFT:
 				/* restore last known fov */
+				initCamera(dev, g_camera);
+				msleep(500);
+
 				dwErr = OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
 				/* must wait for auto exposure control (AEC)
 				 * and auto gain control (AGC) to adjust image brightness

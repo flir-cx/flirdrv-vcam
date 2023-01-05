@@ -34,6 +34,65 @@ static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, int bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, int bSuspend);
 
+static ssize_t vcam_eoco_power_store(struct device *dev, struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+	unsigned long val;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
+
+	if (kstrtoul(buf, 0, &val) < 0)
+		return -EINVAL;
+	EnablePower(pInfo, val);
+	if (val) {
+		OV5640_Init(dev);
+	}
+	return count;
+}
+
+static ssize_t vcam_eoco_power_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
+
+	sprintf(buf, "VCAM OV5640 Power state %s\n",
+		regulator_is_enabled(pInfo->reg_vcm1i2c) ? "on":"off");
+	return strlen(buf);
+}
+
+static DEVICE_ATTR(vcam_eoco_power, 0644, vcam_eoco_power_show, vcam_eoco_power_store);
+
+
+static struct attribute *vcam_eoco_attrs[] = {
+	&dev_attr_vcam_eoco_power.attr,
+	NULL
+};
+
+
+static const struct attribute_group vcam_eoco_groups = {
+	.attrs = vcam_eoco_attrs,
+};
+
+
+int vcam_eoco_create_sysfs_attributes(struct device *dev)
+{
+	int ret = -EIO;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+
+	ret = sysfs_create_group(&pdev->dev.kobj, &vcam_eoco_groups);
+	if (ret)
+		pr_err("failed to add sys fs entry\n");
+	return ret;
+}
+
+void vcam_eoco_remove_sysfs_attributes(struct device *dev)
+{
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+
+	sysfs_remove_group(&pdev->dev.kobj, &vcam_eoco_groups);
+
+}
+
 //-----------------------------------------------------------------------------
 //
 // Function: EocoInitHW
@@ -113,20 +172,25 @@ DWORD EocoInitHW(struct device *dev)
 
 	EnablePower(pInfo, TRUE);
 	ret = OV5640_Init(dev);
-	if (ret) {
+	if (ret)
 		goto out_init;
-	}
+
+	ret = vcam_eoco_create_sysfs_attributes(dev);
+	if (ret)
+		goto out_eoco_sysfs;
 
 	ret = OV5640_create_sysfs_attributes(dev);
-	if (ret) {
+	if (ret)
 		goto out_sysfs;
-	}
+
 
 	return ret;
+
 out_sysfs:
+	vcam_eoco_remove_sysfs_attributes(dev);
+out_eoco_sysfs:
 	EnablePower(pInfo, FALSE);
 out_init:
-
 	return ret;
 }
 
@@ -134,6 +198,7 @@ DWORD EocoDeInitHW(struct device *dev)
 {
 	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	OV5640_remove_sysfs_attributes(dev);
+	vcam_eoco_remove_sysfs_attributes(dev);
 	/* OV5640_DeInit(pInfo); */
 	EnablePower(pInfo, FALSE);
 	i2c_put_adapter(pInfo->hI2C);
