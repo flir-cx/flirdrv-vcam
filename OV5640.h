@@ -20,6 +20,8 @@
 
 // Local typedefs
 
+typedef enum { CAM_1, CAM_2, CAM_ALL } CAM_NO;
+
 // Local functions
 
 // Local variables

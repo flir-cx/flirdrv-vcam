@@ -866,6 +866,12 @@ static struct reg_value night_mode_off = { 0x3a00, 0x78 };
 static struct reg_value autofocus_on = { 0x3022, 0x04 };
 static struct reg_value autofocus_off = { 0x3022, 0x00 };
 
+static int CamActive[CAM_ALL] = { TRUE, FALSE };
+
+static int g_vcamFOV;
+static CAM_NO g_camera = CAM_ALL;
+
+
 /* OV5640 Configurations copied from WINCE Gas Camera */
 /*
  * General initialization executed once at power on
@@ -1092,9 +1098,7 @@ static ssize_t fov_store(struct device *dev, struct device_attribute *attr,
 
 static ssize_t fov_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
-
-	sprintf(buf, "VCAM OV5640 FOV: (54 39 28) %i\n", pInfo->fov);
+	sprintf(buf, "VCAM OV5640 FOV: (54 39 28) %i\n", g_vcamFOV);
 	return strlen(buf);
 }
 
@@ -1424,7 +1428,7 @@ static int ov5640_set_sensor_model_conf(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 		} else if (pInfo->sensor_model[camera] == OV5640_STANDARD) {
 			dev_info(dev, "Selecting Standard OV5640 config\n");
 		} else {
-			dev_err(dev, "Unknown OV5640\n");
+			dev_info(dev, "Unknown OV5640\n");
 			return -1;
 		}
 	}
@@ -1690,11 +1694,11 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 		ov5640_set_sensor_model_conf(pInfo, camera);
 		OV5640_enable_stream(pInfo, camera, FALSE);
 		ret = OV5640_DoI2CWrite(pInfo, setting, elements, camera);
+
 		OV5640_enable_stream(pInfo, camera, TRUE);
 
 		if (ret == 0) {
-			pInfo->fov = fov;
-			pInfo->cam = camera;
+			g_vcamFOV = fov;
 			schedule_work(&pInfo->nightmode_work);
 		}
 	}
@@ -1741,7 +1745,7 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 	else
 		regval = &ov5640_flip_off_reg;
 
-	return OV5640_DoI2CWrite(pInfo, regval, 1, pInfo->camera);
+	return OV5640_DoI2CWrite(pInfo, regval, 1, g_camera);
 }
 
 
@@ -1756,7 +1760,7 @@ static int initMIPICamera(struct device *dev, CAM_NO camera)
 	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
-	dev_info(dev, "mipi interface\n");
+	dev_info(dev, "MIPI interface used\n");
 	ret = OV5640_set_5MP(pInfo, camera);
 	if (ret) {
 		dev_err(dev, "Failed to configure MIPI camera interface\n");
@@ -1829,13 +1833,12 @@ int OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
 {
 	int ret = -EIO;
 	struct platform_device *pdev = pInfo->pLinuxDevice;
-	struct device *dev = &pdev->dev;
-
-	ret = OV5640_set_5MP(pInfo, pInfo->camera);
-	if (ret) {
-		dev_err(dev, "Failed to reinitialize camera\n");
+	ret = OV5640_set_5MP(pInfo, g_camera);
+	if (ret)
 		return ret;
-	}
+	ret = OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
+	if (ret)
+		return ret;
 	return ret;
 }
 
@@ -1852,26 +1855,10 @@ int OV5640_Init(struct device *dev)
 
 	INIT_WORK(&pInfo->nightmode_work, nightmode_on_off_work);
 
-	if (pInfo->camera == CAM_ALL)
-		dev_warn(dev, "CAM_ALL setting used... should be avoided\n");
-
 	if (pInfo->cameraI2CAddress[1] == 0)	/* Only 1 active camera */
-		pInfo->camera = CAM_1;
+		g_camera = CAM_1;
 
-	if (pInfo->camera == CAM_ALL)
-		dev_warn(dev, "**CAM_ALL setting used... should be avoided\n");
-
-	pInfo->CamActive[CAM_1] = true;
-	pInfo->CamActive[CAM_2] = false;
-
-	ret = initCamera(dev, pInfo->camera);
-	//TODO add if ret...
-	ret = OV5640_set_fov(pInfo, pInfo->camera, 54);
-	if (ret) {
-		dev_err(dev, "Failed in call OV5640_set_fov\n");
-		return ret;
-	}
-
+	ret = initCamera(dev, g_camera);
 	return ret;
 }
 
@@ -1908,9 +1895,8 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_GET_ACTIVE:
 		{
 			VCAMIOCTLACTIVE *pVcamIoctl = (VCAMIOCTLACTIVE *) pBuf;
-
 			LOCK(pInfo);
-			pVcamIoctl->bActive = pInfo->CamActive[CAM_1] || pInfo->CamActive[CAM_2];
+			pVcamIoctl->bActive = CamActive[CAM_1] || CamActive[CAM_2];
 			dwErr = 0;
 			UNLOCK(pInfo);
 		}
@@ -1919,7 +1905,6 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 	case IOCTL_CAM_INIT:
 		dwErr = 0;
 		break;
-
 	case IOCTL_CAM_SET_ACTIVE:
 	case IOCTL_CAM_SET_2ND_ACTIVE:
 		{
@@ -1930,9 +1915,8 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			NewActive = (((VCAMIOCTLACTIVE *) pBuf)->bActive != 0);
 
 			if (res) {
-				pInfo->CamActive[cam] = NewActive;
-				dev_err(dev, "CamActive for cam %d now %d\n", cam, pInfo->CamActive[cam]);
-				dwErr = 0;
+				CamActive[cam] = NewActive;
+				dwErr = ERROR_SUCCESS;
 			}
 			UNLOCK(pInfo);
 		}
@@ -1947,7 +1931,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			dwErr = pInfo->pSetTorchState(pInfo, pFlashData);
 			/* set fast exposure to compensate for led brightness */
 			if (pFlashData->bTorchOn)
-				OV5640_set_exposure(pInfo, pInfo->camera, 0x2000);
+				OV5640_set_exposure(pInfo, g_camera, 0x2000);
 
 			UNLOCK(pInfo);
 		}
@@ -1961,13 +1945,13 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			switch (pMode->eCamMode) {
 			case VCAM_STILL:
 				/* set camera to 5MP full size mode */
-				dwErr = OV5640_set_5MP(pInfo, pInfo->camera);
+				dwErr = OV5640_set_5MP(pInfo, g_camera);
 				msleep(800);
 				break;
 
 			case VCAM_DRAFT:
 				/* restore last known fov */
-				dwErr = OV5640_set_fov(pInfo, pInfo->camera, pInfo->fov);
+				dwErr = OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
 				/* must wait for auto exposure control (AEC)
 				 * and auto gain control (AGC) to adjust image brightness
 				 */
@@ -1989,23 +1973,23 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
 			VCAMIOCTLFOV *pVcamFOV = (VCAMIOCTLFOV *) pBuf;
 
 			LOCK(pInfo);
-			dwErr = OV5640_set_fov(pInfo, pInfo->camera, pVcamFOV->fov);
+			dwErr = OV5640_set_fov(pInfo, g_camera, pVcamFOV->fov);
 			UNLOCK(pInfo);
 		}
 		break;
 	case IOCTL_CAM_GET_FOV:
 		LOCK(pInfo);
-		((VCAMIOCTLFOV *) pBuf)->fov = pInfo->fov;
+		((VCAMIOCTLFOV *) pBuf)->fov = g_vcamFOV;
 		dwErr = 0;
 		UNLOCK(pInfo);
 		break;
 
 
 	case IOCTL_CAM_MIRROR_ON:
-		dwErr = OV5640_mirror_enable(pInfo, pInfo->camera, TRUE);
+		dwErr = OV5640_mirror_enable(pInfo, g_camera, TRUE);
 		break;
 	case IOCTL_CAM_MIRROR_OFF:
-		dwErr = OV5640_mirror_enable(pInfo, pInfo->camera, FALSE);
+		dwErr = OV5640_mirror_enable(pInfo, g_camera, FALSE);
 		break;
 	case IOCTL_CAM_FLIP_ON:
 		LOCK(pInfo);

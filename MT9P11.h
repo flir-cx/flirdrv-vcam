@@ -2,6 +2,9 @@
 
 #ifndef MT91P11_H
 #define MT91P11_H
+// Local typedefs
+
+typedef enum { CAM_1, CAM_2, CAM_ALL } CAM_NO;
 
 // Local definitions
 

@@ -19,7 +19,6 @@
 #define	UNLOCK(pd)		up(&pd->semDevice)
 #define	dim(x)			(sizeof(x) / sizeof((x)[0]))
 
-typedef enum { CAM_1, CAM_2, CAM_ALL } CAM_NO;
 
 enum sensor_model {
 	OV5640_STANDARD,
@@ -56,9 +55,7 @@ typedef struct __CAM_HW_INDEP_INFO {
 
 	struct work_struct nightmode_work;
 	int cam;
-	int camera;
-	int fov;
-	int CamActive[CAM_ALL];
+
 } CAM_HW_INDEP_INFO, *PCAM_HW_INDEP_INFO;
 
 // Hardware specific functions
