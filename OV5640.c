@@ -1448,6 +1448,8 @@ static int ov5640_set_sensor_model_conf(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
  */
 int OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo, struct reg_value *pMode, USHORT elements, CAM_NO camera)
 {
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
 	struct i2c_msg msgs[1];
 	int i, retval = 0;
 	DWORD cam;
@@ -1456,7 +1458,6 @@ int OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo, struct reg_value *pMode, USHORT 
 	u8 buf[3] = { 0 };
 	u16 RegAddr = 0;
 	u8 Val = 0;
-
 	for (cam = cam_first; cam <= cam_last; cam++) {
 		/*  Check if camera in use */
 		msgs[0].addr = pInfo->cameraI2CAddress[cam] >> 1;
@@ -1476,8 +1477,16 @@ int OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo, struct reg_value *pMode, USHORT 
 
 			retval = i2c_transfer(pInfo->hI2C, msgs, 1);
 
-			if (retval <= 0)
+			if (retval == -EAGAIN) {
+				msleep(100);
+				retval = i2c_transfer(pInfo->hI2C, msgs, 1);
+			}
+
+			if (retval <= 0) {
+				dev_err(dev, "failed on index i=%i with error %i (data 0x%x:0x%x)\n",
+					i, retval, RegAddr, Val);
 				return retval;
+			}
 		}
 	}
 
@@ -1606,13 +1615,13 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_5MP,
 					OV5640_INIT_SETTING_5MP_ELEMENTS, camera);
 		if (ret) {
-			dev_err(dev, "Failed to call OV5640_DoI2CWrite\n");
+			dev_err(dev, "Failed to set parallell 5MP mode\n");
 			return ret;
 		}
 	} else {
 		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP, OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS, camera);
 		if (ret) {
-			dev_err(dev, "Failed to call OV5640_DoI2CWrite\n");
+			dev_err(dev, "Failed to set MIPI mode 5MP\n");
 			return ret;
 		}
 
@@ -1622,7 +1631,7 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 		if (pInfo->edge_enhancement) {
 			ret = OV5640_DoI2CWrite(pInfo, &ov5640_edge_enhancement, 1, camera);
 			if (ret) {
-				dev_err(dev, "Failed to call OV5640_DoI2CWrite\n");
+				dev_err(dev, "Failed to enable edge enhancement\n");
 				return ret;
 			}
 		}
