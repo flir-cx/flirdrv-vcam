@@ -44,7 +44,6 @@ static DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo,
 static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
 			   VCAMIOCTLFLASH *pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
-static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable);
 
 #ifdef CONFIG_OF
 static int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int *ppin, char *of_name,
@@ -81,7 +80,6 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 	pInfo->pGetTorchState = GetTorchState;
 	pInfo->pSetTorchState = SetTorchState;
 	pInfo->pEnablePower = EnablePower;
-	pInfo->pSuspend = Suspend;
 	pInfo->do_iocontrol = do_iocontrol;
 	pInfo->cameraI2CAddress[0] = 0x78;	// At power on vcam modules will
 	// share 0x78 i2c address
@@ -293,26 +291,15 @@ void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 #endif
 }
 
-//-----------------------------------------------------------------------------
-//
-// Function: Suspend
-//
-// This function will handle suspend and resume
-//
-// Parameters:
-//
-// Returns:
-//
-//-----------------------------------------------------------------------------
-static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
-{
-}
-
-
 static DWORD do_iocontrol(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR userbuf)
 {
 	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
+	DWORD dwErr;
 
-	return OV5640_IOControl(pInfo, ioctl, buf, userbuf);
+	switch (ioctl) {
+	default:
+		dwErr = OV5640_IOControl(pInfo, ioctl, buf, userbuf);
+	}
+	return dwErr;
 }
 

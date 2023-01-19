@@ -138,8 +138,9 @@ static int vcam_remove(struct platform_device *pdev)
 
 static int vcam_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	if (gpDev->pSuspend)
-		gpDev->pSuspend(gpDev, TRUE);
+	struct device *dev = &pdev->dev;
+
+	gpDev->do_iocontrol(dev, IOCTL_CAM_SUSPEND, NULL, NULL);
 	return 0;
 }
 
@@ -150,8 +151,9 @@ static void vcam_shutdown(struct platform_device *pdev)
 
 static int vcam_resume(struct platform_device *pdev)
 {
-	if (gpDev->pSuspend)
-		gpDev->pSuspend(gpDev, FALSE);
+	struct device *dev = &pdev->dev;
+
+	gpDev->do_iocontrol(dev, IOCTL_CAM_RESUME, NULL, NULL);
 	return 0;
 }
 
@@ -234,22 +236,6 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 			dwErr = ERROR_SUCCESS;
 			UNLOCK(pInfo);
 		}
-		break;
-
-	case IOCTL_CAM_SUSPEND:
-		{
-			if (gpDev->pSuspend)
-				gpDev->pSuspend(gpDev, TRUE);
-		}
-		dwErr = ERROR_SUCCESS;
-		break;
-
-	case IOCTL_CAM_RESUME:
-		{
-			if (gpDev->pSuspend)
-				gpDev->pSuspend(gpDev, FALSE);
-		}
-		dwErr = ERROR_SUCCESS;
 		break;
 
 	default:

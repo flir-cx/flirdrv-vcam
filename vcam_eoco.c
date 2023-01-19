@@ -119,7 +119,6 @@ DWORD EocoInitHW(struct device *dev)
 	pInfo->pGetTorchState = GetTorchState;
 	pInfo->pSetTorchState = SetTorchState;
 	pInfo->pEnablePower = EnablePower;
-	pInfo->pSuspend = Suspend;
 	pInfo->do_iocontrol = do_iocontrol;
 	pInfo->cameraI2CAddress[0] = 0x78;
 	pInfo->edge_enhancement = 1;
@@ -400,5 +399,20 @@ static DWORD do_iocontrol(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR us
 {
 	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 
-	return OV5640_IOControl(pInfo, ioctl, buf, userbuf);
+	DWORD dwErr;
+
+	switch (ioctl) {
+	case IOCTL_CAM_SUSPEND:
+		Suspend(pInfo, TRUE);
+		dwErr = ERROR_SUCCESS;
+		break;
+	case IOCTL_CAM_RESUME:
+		Suspend(pInfo, FALSE);
+		dwErr = ERROR_SUCCESS;
+		break;
+	default:
+		dwErr = OV5640_IOControl(pInfo, ioctl, buf, userbuf);
+	}
+	return dwErr;
+
 }
