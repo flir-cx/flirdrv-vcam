@@ -37,7 +37,6 @@
 // Function prototypes
 static long VCAM_IOControl(struct file *filep,
 			   unsigned int cmd, unsigned long arg);
-static int VCAM_Open(struct inode *inode, struct file *filp);
 static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 			 DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);
 
@@ -48,7 +47,6 @@ static PCAM_HW_INDEP_INFO gpDev;
 static const struct file_operations vcam_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = VCAM_IOControl,
-	.open = VCAM_Open,
 };
 
 static struct miscdevice vcam_miscdev = {
@@ -317,11 +315,6 @@ static long VCAM_IOControl(struct file *filep,
 	kfree(tmp);
 
 	return dwErr;
-}
-
-static int VCAM_Open(struct inode *inode, struct file *filp)
-{
-	return 0;
 }
 
 module_init(VCAM_Init);
