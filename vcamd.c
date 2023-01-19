@@ -204,8 +204,7 @@ static void VCAM_Deinit(void)
 #endif
 }
 
-static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
-			 DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf)
+static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf)
 {
 	DWORD dwErr = ERROR_INVALID_PARAMETER;
 	struct platform_device *pdev = pInfo->pLinuxDevice;
@@ -213,29 +212,17 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 
 	switch (Ioctl) {
 	case IOCTL_CAM_GET_FLASH:
-		{
-			VCAMIOCTLFLASH *pFlashData = (VCAMIOCTLFLASH *) pBuf;
-
-			LOCK(pInfo);
-
-			// Callback to platform code to get torch/flash state
-			dwErr = pInfo->pGetTorchState(pInfo, pFlashData);
-			UNLOCK(pInfo);
-		}
+		LOCK(pInfo);
+		dwErr = pInfo->pGetTorchState(pInfo, (VCAMIOCTLFLASH *)pBuf);
+		UNLOCK(pInfo);
 		break;
 
 	case IOCTL_CAM_GET_CAM_MODEL:
-		{
-			VCAMIOCTLCAMMODEL *pModel = (VCAMIOCTLCAMMODEL *) pBuf;
-
-			LOCK(pInfo);
-			pModel->eCamModel = pInfo->eCamModel;
-
-			dwErr = ERROR_SUCCESS;
-			UNLOCK(pInfo);
-		}
+		LOCK(pInfo);
+		((VCAMIOCTLCAMMODEL *) pBuf)->eCamModel = pInfo->eCamModel;
+		dwErr = ERROR_SUCCESS;
+		UNLOCK(pInfo);
 		break;
-
 	default:
 		dwErr = pInfo->do_iocontrol(dev, Ioctl, pBuf, pUserBuf);
 		break;

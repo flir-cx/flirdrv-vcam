@@ -1842,7 +1842,6 @@ static int initCamera(struct device *dev, CAM_NO camera)
 int OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
 {
 	int ret = -EIO;
-	struct platform_device *pdev = pInfo->pLinuxDevice;
 	ret = OV5640_set_5MP(pInfo, g_camera);
 	if (ret)
 		return ret;
