@@ -52,7 +52,7 @@ typedef struct __CAM_HW_INDEP_INFO {
 	DWORD(*pSetTorchState) (struct __CAM_HW_INDEP_INFO *pInfo, VCAMIOCTLFLASH * pFlashData);
 	void (*pEnablePower)(struct __CAM_HW_INDEP_INFO *pInfo, BOOL bEnable);
 	void (*pSuspend)(struct __CAM_HW_INDEP_INFO *pInfo, BOOL bSuspend);
-
+	DWORD (*do_iocontrol)(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR userbuf);
 	struct work_struct nightmode_work;
 	int cam;
 

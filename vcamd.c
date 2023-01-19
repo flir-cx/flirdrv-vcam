@@ -253,25 +253,9 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo,
 		break;
 
 	default:
-		switch (pInfo->eCamModel) {
-			/* case MT9P111: */
-			/*      return MT9P111_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
-
-			/* case OV7740: */
-			/*      return OV7740_IOControl(pInfo, Ioctl, pBuf, pUserBuf); */
-
-		case OV5640:
-			return OV5640_IOControl(pInfo, Ioctl, pBuf, pUserBuf);
-
-		default:
-			dwErr = ERROR_NOT_SUPPORTED;
-			dev_err(dev, "CAM_Init - camera model undetermined!\n");
-			break;
-		}
+		dwErr = pInfo->do_iocontrol(dev, Ioctl, pBuf, pUserBuf);
 		break;
 	}
-
-	// pass back appropriate response codes
 	return dwErr;
 }
 

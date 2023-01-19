@@ -33,6 +33,7 @@ static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
 			   VCAMIOCTLFLASH *pFlashData);
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, int bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, int bSuspend);
+static DWORD do_iocontrol(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR userbuf);
 
 static ssize_t vcam_eoco_power_store(struct device *dev, struct device_attribute *attr,
 				     const char *buf, size_t count)
@@ -119,6 +120,7 @@ DWORD EocoInitHW(struct device *dev)
 	pInfo->pSetTorchState = SetTorchState;
 	pInfo->pEnablePower = EnablePower;
 	pInfo->pSuspend = Suspend;
+	pInfo->do_iocontrol = do_iocontrol;
 	pInfo->cameraI2CAddress[0] = 0x78;
 	pInfo->edge_enhancement = 1;
 
@@ -392,4 +394,11 @@ static void Suspend(PCAM_HW_INDEP_INFO pInfo, int bSuspend)
 		EnablePower(pInfo, true);
 		OV5640_reinit(pInfo);
 	}
+}
+
+static DWORD do_iocontrol(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR userbuf)
+{
+	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
+
+	return OV5640_IOControl(pInfo, ioctl, buf, userbuf);
 }

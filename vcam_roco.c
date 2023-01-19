@@ -52,6 +52,7 @@ static int requestGPIOpin(PCAM_HW_INDEP_INFO pInfo, int *ppin, char *of_name,
 static int requestRegulator(PCAM_HW_INDEP_INFO pInfo, struct regulator **reg,
 			    char *of_name, int enable);
 #endif
+static DWORD do_iocontrol(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR userbuf);
 
 //-----------------------------------------------------------------------------
 //
@@ -81,6 +82,7 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 	pInfo->pSetTorchState = SetTorchState;
 	pInfo->pEnablePower = EnablePower;
 	pInfo->pSuspend = Suspend;
+	pInfo->do_iocontrol = do_iocontrol;
 	pInfo->cameraI2CAddress[0] = 0x78;	// At power on vcam modules will
 	// share 0x78 i2c address
 	pInfo->cameraI2CAddress[1] = 0x7A;
@@ -305,3 +307,12 @@ void EnablePower(PCAM_HW_INDEP_INFO pInfo, BOOL bEnable)
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
 {
 }
+
+
+static DWORD do_iocontrol(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR userbuf)
+{
+	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
+
+	return OV5640_IOControl(pInfo, ioctl, buf, userbuf);
+}
+
