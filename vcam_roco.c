@@ -72,6 +72,8 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 	extern struct list_head leds_list;
 	extern struct rw_semaphore leds_list_lock;
 	struct led_classdev *led_cdev;
+	struct platform_device *pdev = pInfo->pLinuxDevice;
+	struct device *dev = &pdev->dev;
 
 	pInfo->hI2C = i2c_get_adapter(1);
 	pInfo->eCamModel = OV5640;
@@ -120,6 +122,10 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 
 	if (!ret)
 		EnablePower(pInfo, TRUE);
+
+	ret = OV5640_Init(dev);
+	if (ret)
+		dev_err(dev, "error during initialization of OV5640\n");
 
 #endif
 	return 0;

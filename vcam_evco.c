@@ -114,6 +114,10 @@ DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo)
 
 	dev_err(dev, "Registered vcam_clk_en-gpio\n");
 	EnablePower(pInfo, TRUE);
+	ret = OV5640_Init(dev);
+	if (ret)
+		dev_err(dev, "error during initialization of OV5640\n");
+
 	ret = OV5640_create_sysfs_attributes(dev);
 	return ret;
 }

@@ -172,9 +172,10 @@ DWORD EocoInitHW(struct device *dev)
 
 	EnablePower(pInfo, TRUE);
 	ret = OV5640_Init(dev);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "error during initialization of OV5640\n");
 		goto out_init;
-
+	}
 	ret = vcam_eoco_create_sysfs_attributes(dev);
 	if (ret)
 		goto out_eoco_sysfs;

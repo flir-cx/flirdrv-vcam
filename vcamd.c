@@ -321,34 +321,6 @@ static long VCAM_IOControl(struct file *filep,
 
 static int VCAM_Open(struct inode *inode, struct file *filp)
 {
-	static BOOL init;
-	struct platform_device *pdev = gpDev->pLinuxDevice;
-	struct device *dev = &pdev->dev;
-
-	LOCK(gpDev);
-	if (!init) {
-		// Detect and Init Visual Camera
-		switch (gpDev->eCamModel) {
-			/* case MT9P111: */
-			/*      MT9P111_Init(gpDev); */
-			/*      break; */
-
-			/* case OV7740: */
-			/*      OV7740_Init(gpDev); */
-			/*      break; */
-
-		case OV5640:
-			OV5640_Init(dev);
-			break;
-
-		default:
-			dev_err(dev, "CAM_Init - camera model undetermined!\n");
-			break;
-		}
-		init = TRUE;
-	}
-	UNLOCK(gpDev);
-
 	return 0;
 }
 
