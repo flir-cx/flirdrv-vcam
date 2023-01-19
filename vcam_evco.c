@@ -179,9 +179,10 @@ DWORD GetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	int ret;
 	struct led_classdev *led = FindTorch();
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 19, 0)
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
-
+#endif
 	if (led) {
 		pFlashData->bTorchOn = (led->brightness) ? TRUE : FALSE;
 		ret = ERROR_SUCCESS;
@@ -217,9 +218,10 @@ DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo, VCAMIOCTLFLASH *pFlashData)
 {
 	int ret;
 	struct led_classdev *led = FindTorch();
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 19, 0)
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
-
+#endif
 	if (led) {
 		led->brightness =
 		    pFlashData->bTorchOn ? led->max_brightness : 0;
