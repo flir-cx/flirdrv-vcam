@@ -52,6 +52,7 @@ static int requestRegulator(PCAM_HW_INDEP_INFO pInfo, struct regulator **reg,
 			    char *of_name, int enable);
 #endif
 static DWORD do_iocontrol(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR userbuf);
+static DWORD deinitialize_hw(struct device *dev);
 
 //-----------------------------------------------------------------------------
 //
@@ -81,6 +82,7 @@ DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo)
 	pInfo->pSetTorchState = SetTorchState;
 	pInfo->pEnablePower = EnablePower;
 	pInfo->do_iocontrol = do_iocontrol;
+	pInfo->deinitialize_hw = deinitialize_hw;
 	pInfo->cameraI2CAddress[0] = 0x78;	// At power on vcam modules will
 	// share 0x78 i2c address
 	pInfo->cameraI2CAddress[1] = 0x7A;
@@ -301,5 +303,12 @@ static DWORD do_iocontrol(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR us
 		dwErr = OV5640_IOControl(pInfo, ioctl, buf, userbuf);
 	}
 	return dwErr;
+}
+
+
+static DWORD deinitialize_hw(struct device *dev)
+{
+	dev_err(dev, "deinitialize vcam driver, not implemented for platform..\n");
+	return 0;
 }
 

@@ -34,6 +34,7 @@ static DWORD SetTorchState(PCAM_HW_INDEP_INFO pInfo,
 static void EnablePower(PCAM_HW_INDEP_INFO pInfo, int bEnable);
 static void Suspend(PCAM_HW_INDEP_INFO pInfo, int bSuspend);
 static DWORD do_iocontrol(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR userbuf);
+static DWORD deinitialize_hw(struct device *dev);
 
 static ssize_t vcam_eoco_power_store(struct device *dev, struct device_attribute *attr,
 				     const char *buf, size_t count)
@@ -120,6 +121,7 @@ DWORD EocoInitHW(struct device *dev)
 	pInfo->pSetTorchState = SetTorchState;
 	pInfo->pEnablePower = EnablePower;
 	pInfo->do_iocontrol = do_iocontrol;
+	pInfo->deinitialize_hw = deinitialize_hw;
 	pInfo->cameraI2CAddress[0] = 0x78;
 	pInfo->edge_enhancement = 1;
 
@@ -194,17 +196,6 @@ out_eoco_sysfs:
 	EnablePower(pInfo, FALSE);
 out_init:
 	return ret;
-}
-
-DWORD EocoDeInitHW(struct device *dev)
-{
-	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
-	OV5640_remove_sysfs_attributes(dev);
-	vcam_eoco_remove_sysfs_attributes(dev);
-	/* OV5640_DeInit(pInfo); */
-	EnablePower(pInfo, FALSE);
-	i2c_put_adapter(pInfo->hI2C);
-	return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -415,4 +406,17 @@ static DWORD do_iocontrol(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR us
 	}
 	return dwErr;
 
+}
+
+
+static DWORD deinitialize_hw(struct device *dev)
+{
+	dev_info(dev, "deinitialize vcam driver..\n");
+	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
+	OV5640_remove_sysfs_attributes(dev);
+	vcam_eoco_remove_sysfs_attributes(dev);
+	/* OV5640_DeInit(pInfo); */
+	EnablePower(pInfo, FALSE);
+	i2c_put_adapter(pInfo->hI2C);
+	return 0;
 }

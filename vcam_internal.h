@@ -52,6 +52,7 @@ typedef struct __CAM_HW_INDEP_INFO {
 	DWORD(*pSetTorchState) (struct __CAM_HW_INDEP_INFO *pInfo, VCAMIOCTLFLASH * pFlashData);
 	void (*pEnablePower)(struct __CAM_HW_INDEP_INFO *pInfo, BOOL bEnable);
 	DWORD (*do_iocontrol)(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR userbuf);
+	DWORD (*deinitialize_hw)(struct device *dev);
 	struct work_struct nightmode_work;
 	int cam;
 
@@ -62,9 +63,9 @@ DWORD NecoInitHW(PCAM_HW_INDEP_INFO pInfo);
 DWORD PicoInitHW(PCAM_HW_INDEP_INFO pInfo);
 DWORD RocoInitHW(PCAM_HW_INDEP_INFO pInfo);
 DWORD EvcoInitHW(PCAM_HW_INDEP_INFO pInfo);
-DWORD EvcoDeInitHW(PCAM_HW_INDEP_INFO pInfo);
+/* DWORD EvcoDeInitHW(PCAM_HW_INDEP_INFO pInfo); */
 DWORD EocoInitHW(struct device *dev);
-DWORD EocoDeInitHW(struct device *dev);
+/* DWORD EocoDeInitHW(struct device *dev); */
 // Visual camera specific functions
 BOOL MT9P111_Init(PCAM_HW_INDEP_INFO pInfo);
 DWORD MT9P111_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf);

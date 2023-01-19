@@ -124,13 +124,11 @@ static int vcam_probe(struct platform_device *pdev)
 static int vcam_remove(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
+	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 
-	if (of_machine_is_compatible("fsl,imx6qp-eoco")) {
-		EocoDeInitHW(dev);
-	} else if ((of_machine_is_compatible("fsl,imx6dl-ec101")) ||
-		   (of_machine_is_compatible("fsl,imx6dl-ec501"))) {
-		EvcoDeInitHW(gpDev);
-	}
+	if (pInfo->deinitialize_hw)
+		pInfo->deinitialize_hw(dev);
+
 	misc_deregister(&vcam_miscdev);
 
 	return 0;
