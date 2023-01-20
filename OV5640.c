@@ -1831,26 +1831,6 @@ static int initCamera(struct device *dev, CAM_NO camera)
 
 	return ret;
 }
-
-/* OV5640_reinit
- *
- * Reinitialize MIPI camera,
- *
- * returns 0 on success
- *         else  error
- */
-int OV5640_reinit(PCAM_HW_INDEP_INFO pInfo)
-{
-	int ret = -EIO;
-	ret = OV5640_set_5MP(pInfo, g_camera);
-	if (ret)
-		return ret;
-	ret = OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
-	if (ret)
-		return ret;
-	return ret;
-}
-
 /* OV5640_Init
  *
  * Start initializing cameras...
