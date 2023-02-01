@@ -157,7 +157,7 @@ static struct reg_value ov5640_setting_High_K[OV5640_SETTING_HIGH_K_ELEMENTS] = 
 /* ; */
 /* ;dated 07/11/2013 A11 */
 /* ;--change 3708/3709 align wt V15 */
-#define OV5640_INIT_SETTING_5MP_ELEMENTS 255
+#define OV5640_INIT_SETTING_5MP_ELEMENTS 259
 
 static struct reg_value ov5640_init_setting_5MP[OV5640_INIT_SETTING_5MP_ELEMENTS] = {
 	{ 0x3103, 0x11 },
@@ -415,6 +415,10 @@ static struct reg_value ov5640_init_setting_5MP[OV5640_INIT_SETTING_5MP_ELEMENTS
 	{ 0x3a1f, 0x14 },
 	{ 0x3008, 0x02 },
 	{ 0x3035, 0x71 },
+	{ 0x471d, 0x00 }, //DVP VSYNC CTRL
+	{ 0x4740, 0x21 }, //DVP POLARITY CTRL00
+	{ 0x4300, 0x32 }, //FORMAT CONTROL b4:3 == 3 -> YUV422 -> b3:0 == 0x0 -> YUYV format
+	{ 0x501f, 0x00 }, //FORMAT MUX CONTROL (Foramt select, b2:0 == 0 -> ISP YUV422
 };
 
 /* Settings from
