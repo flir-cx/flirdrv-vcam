@@ -157,7 +157,7 @@ static struct reg_value ov5640_setting_High_K[OV5640_SETTING_HIGH_K_ELEMENTS] = 
 /* ; */
 /* ;dated 07/11/2013 A11 */
 /* ;--change 3708/3709 align wt V15 */
-#define OV5640_INIT_SETTING_5MP_ELEMENTS 259
+#define OV5640_INIT_SETTING_5MP_ELEMENTS 258
 
 static struct reg_value ov5640_init_setting_5MP[OV5640_INIT_SETTING_5MP_ELEMENTS] = {
 	{ 0x3103, 0x11 },
@@ -208,7 +208,6 @@ static struct reg_value ov5640_init_setting_5MP[OV5640_INIT_SETTING_5MP_ELEMENTS
 	{ 0x3c09, 0x1c },
 	{ 0x3c0a, 0x9c },
 	{ 0x3c0b, 0x40 },
-	{ 0x3820, 0x40 },
 	{ 0x3821, 0x06 },
 	{ 0x3814, 0x11 },
 	{ 0x3815, 0x11 },
