@@ -1228,9 +1228,8 @@ static int ov5640_mod_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 mask, u8 val,
 	int ret;
 
 	ret = ov5640_read_reg(pInfo, reg, &readval, cam);
-	if (ret <= 0) {
+	if (ret < 0)
 		return ret;
-	}
 
 	readval &= ~mask;
 	val &= mask;
