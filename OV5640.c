@@ -1611,32 +1611,33 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
+	int ov5640_using_mipi_interface = !of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL);
+
 	OV5640_enable_stream(pInfo, camera, FALSE);
-	if (of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL)) {
-		dev_info(dev, "Activating parallell 5MP mode...\n");
-		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_5MP,
-					OV5640_INIT_SETTING_5MP_ELEMENTS, camera);
-		if (ret) {
-			dev_err(dev, "Failed to set parallell 5MP mode\n");
-			return ret;
-		}
-	} else {
+
+	/* Initialize camera settings */
+	if (ov5640_using_mipi_interface)
 		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP, OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS, camera);
+	else
+		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_5MP, OV5640_INIT_SETTING_5MP_ELEMENTS, camera);
+
+	if (ret) {
+		dev_err(dev, "Failed to set %s 5MP mode\n", ov5640_using_mipi_interface ? "MIPI" : "parallell");
+		return ret;
+	}
+
+	/* Write model specific configuration */
+	ov5640_set_sensor_model_conf(pInfo, camera);
+
+	if (pInfo->edge_enhancement) {
+		ret = OV5640_DoI2CWrite(pInfo, &ov5640_edge_enhancement, 1, camera);
 		if (ret) {
-			dev_err(dev, "Failed to set MIPI mode 5MP\n");
+			dev_err(dev, "Failed to enable edge enhancement\n");
 			return ret;
 		}
+	}
 
-		/* Write model specific configuration */
-		ov5640_set_sensor_model_conf(pInfo, camera);
-
-		if (pInfo->edge_enhancement) {
-			ret = OV5640_DoI2CWrite(pInfo, &ov5640_edge_enhancement, 1, camera);
-			if (ret) {
-				dev_err(dev, "Failed to enable edge enhancement\n");
-				return ret;
-			}
-		}
+	if (ov5640_using_mipi_interface) {
 		/* Set default flip */
 		ret = OV5640_FlipImage(pInfo, FALSE);
 		if (ret) {
@@ -1649,7 +1650,6 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 			dev_err(dev, "Failed to call OV5640_mirror_enable\n");
 			return ret;
 		}
-
 	}
 
 	OV5640_enable_stream(pInfo, camera, TRUE);
