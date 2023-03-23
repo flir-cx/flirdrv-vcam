@@ -683,7 +683,6 @@ static struct reg_value ov5640_init_setting_9fps_5MP[OV5640_INIT_SETTING_9FPS_5M
 
 static struct reg_value ov5640_edge_enhancement = { 0x5302, 0x24 };	// Sigma increase edge enhancement from 10 to 24 (161025)
 
-
 /*
  * settings based on ov5640_setting_30fps_720P_1280_720
  *
@@ -1796,6 +1795,12 @@ static int initCSICamera(struct device *dev, CAM_NO camera)
 		return ret;
 	}
 
+	ret = OV5640_mirror_enable(pInfo, g_camera, true);
+	if (ret < 0) {
+		dev_err(dev, "Failed to enable mirror on sensor\n");
+		return ret;
+	}
+
 	return 0;
 }
 
@@ -1823,8 +1828,16 @@ static int initCamera(struct device *dev, CAM_NO camera)
 
 	if (of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL)) {
 		ret = initCSICamera(dev, camera);
+		if (ret < 0) {
+			dev_err(dev, "Failed to initialise parallell camera interface\n");
+			return ret;
+		}
 	} else {
 		ret = initMIPICamera(dev, camera);
+		if (ret < 0) {
+			dev_err(dev, "Failed to initialise MIPI camera interface\n");
+			return ret;
+		}
 	}
 
 	ret = OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
