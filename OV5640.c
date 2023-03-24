@@ -1175,10 +1175,8 @@ static int ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
 	msgs[0].len = 3;
 
 	ret = i2c_transfer(pInfo->hI2C, msgs, 1);
-	if (ret <= 0) {
-		dev_err(dev, "%s: failed\n", __func__);
+	if (ret <= 0)
 		return ret;
-	}
 
 	return 0;
 }
