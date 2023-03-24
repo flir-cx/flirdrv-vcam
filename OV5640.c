@@ -1019,9 +1019,7 @@ static struct reg_value ov5640_init_interface_csi[OV5640_INIT_INTERFACE_CSI_ELEM
 };
 
 /* attribute sysfs files */
-static ssize_t enable_stream_store(struct device *dev,
-			    struct device_attribute *attr,
-			    const char *buf, size_t count)
+static ssize_t enable_stream_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
 	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
@@ -1033,9 +1031,7 @@ static ssize_t enable_stream_store(struct device *dev,
 	return count;
 }
 
-static ssize_t flip_store(struct device *dev,
-			    struct device_attribute *attr,
-			    const char *buf, size_t count)
+static ssize_t flip_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
 	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
@@ -1047,9 +1043,7 @@ static ssize_t flip_store(struct device *dev,
 	return count;
 }
 
-static ssize_t testpattern_store(struct device *dev,
-			    struct device_attribute *attr,
-			    const char *buf, size_t count)
+static ssize_t testpattern_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
 
@@ -1061,9 +1055,7 @@ static ssize_t testpattern_store(struct device *dev,
 }
 
 
-static ssize_t mirror_enable_store(struct device *dev,
-			    struct device_attribute *attr,
-			    const char *buf, size_t count)
+static ssize_t mirror_enable_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
 	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
@@ -1088,8 +1080,7 @@ static ssize_t autofocus_enable_store(struct device *dev, struct device_attribut
 }
 
 
-static ssize_t fov_store(struct device *dev, struct device_attribute *attr,
-			 const char *buf, size_t count)
+static ssize_t fov_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
 	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
@@ -1156,8 +1147,7 @@ void OV5640_remove_sysfs_attributes(struct device *dev)
  *
  * Returns negative errno, else 0 on success
  */
-static int ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
-			    CAM_NO cam)
+static int ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val, CAM_NO cam)
 {
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
@@ -1184,8 +1174,7 @@ static int ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val,
 /* ov5640_read_reg
  * Returns negative errno, else 0 on success
  */
-static int ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val,
-			   CAM_NO cam)
+static int ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val, CAM_NO cam)
 {
 	u8 buf[2] = { 0 };
 	struct i2c_msg msgs[1];
@@ -1219,8 +1208,7 @@ static int ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val,
 /* ov5640_read_reg
  * Returns negative errno, else 0 on success
  */
-static int ov5640_mod_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 mask, u8 val,
-			  CAM_NO cam)
+static int ov5640_mod_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 mask, u8 val, CAM_NO cam)
 {
 	u8 readval;
 	int ret;
@@ -1239,8 +1227,7 @@ static int ov5640_mod_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 mask, u8 val,
 /* ov5640_get_otp_memory
  * Returns negative errno, else 0 on success
  */
-static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory,
-				 int n, CAM_NO cam)
+static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory, int n, CAM_NO cam)
 {
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
@@ -1545,8 +1532,7 @@ static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool 
  *
  *
  */
-static void OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera,
-				    bool enable)
+static void OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
 {
 	if (enable)
 		OV5640_DoI2CWrite(pInfo, &autofocus_on, 1, camera);
@@ -1559,8 +1545,7 @@ static void OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera,
  *
  * returns void
  */
-static void OV5640_set_exposure(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera,
-				int exp)
+static void OV5640_set_exposure(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int exp)
 {
 	struct reg_value temp;
 
@@ -1610,7 +1595,7 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 	struct platform_device *pdev = pInfo->pLinuxDevice;
 	struct device *dev = &pdev->dev;
 
-	int ov5640_using_mipi_interface = !of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL);
+	bool ov5640_using_mipi_interface = !of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL);
 
 	OV5640_enable_stream(pInfo, camera, FALSE);
 
@@ -1869,8 +1854,7 @@ int OV5640_Init(struct device *dev)
 /* OV5640_IOControl
  *
  */
-DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo,
-		       DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf)
+DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf)
 {
 	DWORD dwErr = ERROR_INVALID_PARAMETER;
 	static int TestActive;
