@@ -1942,11 +1942,6 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 				initCamera(dev, g_camera);
 				msleep(500);
 
-				dwErr = OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
-				/* must wait for auto exposure control (AEC)
-				 * and auto gain control (AGC) to adjust image brightness
-				 */
-				msleep(500);
 				break;
 
 			case VCAM_UNDEFINED:
