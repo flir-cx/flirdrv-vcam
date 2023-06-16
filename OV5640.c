@@ -413,12 +413,12 @@ static struct reg_value ov5640_init_setting_5MP[OV5640_INIT_SETTING_5MP_ELEMENTS
 	{ 0x3a11, 0x60 },
 	{ 0x3a1f, 0x14 },
 	{ 0x3008, 0x02 },
-	{ 0x3035, 0x71 },
 	{ 0x471d, 0x00 }, //DVP VSYNC CTRL
 	{ 0x4740, 0x21 }, //DVP POLARITY CTRL00
 	{ 0x4300, 0x32 }, //FORMAT CONTROL b4:3 == 3 -> YUV422 -> b3:0 == 0x0 -> YUYV format
 	{ 0x501f, 0x00 }, //FORMAT MUX CONTROL (Foramt select, b2:0 == 0 -> ISP YUV422
 	{ 0x3820, 0x47 }, //VFLIP
+	{ 0x3035, 0x21 },
 	{ 0x3821, 0x01 }, //MIRROR
 };
 
@@ -1332,6 +1332,7 @@ static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory, int n
  * and it would probably be better to cal a new function, ov5640_get_sensor_model once per camera instead...
  *
  */
+
 static int ov5640_get_sensor_models(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 {
 	struct platform_device *pdev = pInfo->pLinuxDevice;
