@@ -1940,7 +1940,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 
 			case VCAM_DRAFT:
 				/* restore last known fov */
-				initCamera(dev, g_camera);
+				dwErr = initCamera(dev, g_camera);
 				msleep(500);
 
 				break;
