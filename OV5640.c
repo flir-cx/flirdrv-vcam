@@ -1802,6 +1802,16 @@ static int initCamera(struct device *dev, CAM_NO camera)
 	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
+	/* Read the OTP memory before the initial configuration. This
+	 * is the only time the otp memory is read. If read after the
+	 * initial settings configuration is loaded the sensor can
+	 * fail to start to stream frames.
+	 */
+	if (ov5640_get_sensor_models(pInfo, camera)) {
+		dev_err(dev, "Failed to get sensor models\n");
+		return -1;
+	}
+
 	if (of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL)) {
 		ret = initCSICamera(dev, camera);
 		if (ret < 0) {
@@ -1814,16 +1824,6 @@ static int initCamera(struct device *dev, CAM_NO camera)
 			dev_err(dev, "Failed to initialise MIPI camera interface\n");
 			return ret;
 		}
-	}
-
-	/* Read the OTP memory before the initial configuration. This
-	 * is the only time the otp memory is read. If read after the
-	 * initial settings configuration is loaded the sensor can
-	 * fail to start to stream frames.
-	 */
-	if (ov5640_get_sensor_models(pInfo, camera)) {
-		dev_err(dev, "Failed to get sensor models\n");
-		return -1;
 	}
 
 	ret = OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
