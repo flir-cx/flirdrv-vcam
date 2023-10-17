@@ -34,6 +34,11 @@
 #define cpu_is_imx6q   cpu_is_mx6q
 #endif
 
+
+static u32 enable_vcam = 1;
+module_param(enable_vcam, uint, 0400);
+MODULE_PARM_DESC(enable_vcam, "Enable visual camera, default = 1 (enabled)");
+
 // Function prototypes
 static long VCAM_IOControl(struct file *filep,
 			   unsigned int cmd, unsigned long arg);
@@ -90,33 +95,35 @@ static int vcam_probe(struct platform_device *pdev)
 #endif
 
 
-	if (of_find_property(gpDev->node, "flip-image", NULL))
-		gpDev->flipped_sensor = 1;
+	if (enable_vcam) {
+		if (of_find_property(gpDev->node, "flip-image", NULL))
+			gpDev->flipped_sensor = 1;
 
-	if (of_machine_is_compatible("fsl,imx6qp-eoco")) {
-		ret = EocoInitHW(dev);
-	} else if ((of_machine_is_compatible("fsl,imx6dl-ec101")) ||
-		   (of_machine_is_compatible("fsl,imx6dl-ec501"))) {
-		ret = EvcoInitHW(gpDev);
-	} else
-#endif
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 19, 0)
-		/* if (cpu_is_mx51()) */
-		/*      ret = PicoInitHW(gpDev); */
-		/* else if (cpu_is_imx6s()) */
-		/*      ret = NecoInitHW(gpDev); */
-		if (cpu_is_imx6q()) {
-			ret = RocoInitHW(gpDev);
+		if (of_machine_is_compatible("fsl,imx6qp-eoco")) {
+			ret = EocoInitHW(dev);
+		} else if ((of_machine_is_compatible("fsl,imx6dl-ec101")) ||
+			   (of_machine_is_compatible("fsl,imx6dl-ec501"))) {
+			ret = EvcoInitHW(gpDev);
 		} else
 #endif
-		{
-			dev_err(dev, "VCAM: Error: Unknown Hardware\n");
-			ret = 0;
-		}
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 19, 0)
+			/* if (cpu_is_mx51()) */
+			/*      ret = PicoInitHW(gpDev); */
+			/* else if (cpu_is_imx6s()) */
+			/*      ret = NecoInitHW(gpDev); */
+			if (cpu_is_imx6q()) {
+				ret = RocoInitHW(gpDev);
+			} else
+#endif
+			{
+				dev_err(dev, "VCAM: Error: Unknown Hardware\n");
+				ret = 0;
+			}
 
-	if (ret) {
-		dev_err(dev, "failed to init hardware!\n");
-		misc_deregister(&vcam_miscdev);
+		if (ret) {
+			dev_err(dev, "failed to init hardware!\n");
+			misc_deregister(&vcam_miscdev);
+		}
 	}
 	return ret;
 }
