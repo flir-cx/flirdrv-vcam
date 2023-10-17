@@ -138,7 +138,8 @@ static int vcam_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct device *dev = &pdev->dev;
 
-	gpDev->do_iocontrol(dev, IOCTL_CAM_SUSPEND, NULL, NULL);
+	if (gpDev->do_iocontrol)
+		gpDev->do_iocontrol(dev, IOCTL_CAM_SUSPEND, NULL, NULL);
 	return 0;
 }
 
@@ -151,7 +152,8 @@ static int vcam_resume(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 
-	gpDev->do_iocontrol(dev, IOCTL_CAM_RESUME, NULL, NULL);
+	if (gpDev->do_iocontrol)
+		gpDev->do_iocontrol(dev, IOCTL_CAM_RESUME, NULL, NULL);
 	return 0;
 }
 
@@ -213,7 +215,8 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUC
 	switch (Ioctl) {
 	case IOCTL_CAM_GET_FLASH:
 		LOCK(pInfo);
-		dwErr = pInfo->pGetTorchState(pInfo, (VCAMIOCTLFLASH *)pBuf);
+		if (pInfo->pGetTorchState)
+			dwErr = pInfo->pGetTorchState(pInfo, (VCAMIOCTLFLASH *)pBuf);
 		UNLOCK(pInfo);
 		break;
 
@@ -224,7 +227,8 @@ static DWORD DoIOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUC
 		UNLOCK(pInfo);
 		break;
 	default:
-		dwErr = pInfo->do_iocontrol(dev, Ioctl, pBuf, pUserBuf);
+		if (gpDev->do_iocontrol)
+			dwErr = pInfo->do_iocontrol(dev, Ioctl, pBuf, pUserBuf);
 		break;
 	}
 	return dwErr;
