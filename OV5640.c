@@ -17,7 +17,7 @@
 #include <linux/i2c.h>
 #include "OV5640.h"
 
-static int initCSICamera(struct device *dev, CAM_NO camera);
+static int ov5640_initcsicamera(struct device *dev, CAM_NO camera);
 static int ov5640_initcamera(struct device *dev, CAM_NO camera);
 
 /* Definition of DT node name, construction is error prone, so avoiding some
@@ -1763,13 +1763,13 @@ static int initMIPICamera(struct device *dev, CAM_NO camera)
 	return ret;
 }
 
-/* initCSICamera
+/* ov5640_initcsicamera
  * Initialize CSI attached camera (CSI interface between OV5640 and FPGA)
  *
  * returns 0 on succes
  *         else failure
  */
-static int initCSICamera(struct device *dev, CAM_NO camera)
+static int ov5640_initcsicamera(struct device *dev, CAM_NO camera)
 {
 	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
@@ -1803,7 +1803,7 @@ static int ov5640_initcamera(struct device *dev, CAM_NO camera)
 	int ret = 0;
 
 	if (of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL)) {
-		ret = initCSICamera(dev, camera);
+		ret = ov5640_initcsicamera(dev, camera);
 		if (ret < 0) {
 			dev_err(dev, "Failed to initialise parallell camera interface\n");
 			return ret;
@@ -1893,7 +1893,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 			break;
 		}
 
-		dwErr = ov5640_initCamera(dev, g_camera);
+		dwErr = ov5640_initcamera(dev, g_camera);
 		break;
 	case IOCTL_CAM_SET_ACTIVE:
 	case IOCTL_CAM_SET_2ND_ACTIVE:
@@ -1941,7 +1941,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 
 			case VCAM_DRAFT:
 				/* restore last known fov */
-				dwErr = ov5640_initCamera(dev, g_camera);
+				dwErr = ov5640_initcamera(dev, g_camera);
 				msleep(500);
 
 				break;
