@@ -1564,11 +1564,11 @@ static void OV5640_set_exposure(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int exp
 	OV5640_DoI2CWrite(pInfo, &temp, 1, camera);
 }
 
-/* nightmode_on_off_work
+/* ov5640_nightmode_on_off_work
  *
  * workqueue work thingy...
  */
-static void nightmode_on_off_work(struct work_struct *work)
+static void ov5640_nightmode_on_off_work(struct work_struct *work)
 {
 	CAM_HW_INDEP_INFO *pInfo = container_of(work, CAM_HW_INDEP_INFO, nightmode_work);
 
@@ -1834,7 +1834,7 @@ int OV5640_Init(struct device *dev)
 	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
-	INIT_WORK(&pInfo->nightmode_work, nightmode_on_off_work);
+	INIT_WORK(&pInfo->nightmode_work, ov5640_nightmode_on_off_work);
 
 	if (pInfo->cameraI2CAddress[1] == 0)	/* Only 1 active camera */
 		g_camera = CAM_1;
