@@ -17,6 +17,7 @@
 #include <linux/i2c.h>
 #include "OV5640.h"
 
+static int ov5640_initmipicamera(struct device *dev, CAM_NO camera);
 static int ov5640_initcsicamera(struct device *dev, CAM_NO camera);
 static int ov5640_initcamera(struct device *dev, CAM_NO camera);
 
@@ -1742,13 +1743,13 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
 }
 
 
-/* initMIPICamera
+/* ov5640_initmipicamera
  * Initialize MIPI attached camera (MIPI interface between OV5640 and FPGA)
  *
  * returns 0 on succes
  *         else failure
  */
-static int initMIPICamera(struct device *dev, CAM_NO camera)
+static int ov5640_initmipicamera(struct device *dev, CAM_NO camera)
 {
 	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
@@ -1809,7 +1810,7 @@ static int ov5640_initcamera(struct device *dev, CAM_NO camera)
 			return ret;
 		}
 	} else {
-		ret = initMIPICamera(dev, camera);
+		ret = ov5640_initmipicamera(dev, camera);
 		if (ret < 0) {
 			dev_err(dev, "Failed to initialise MIPI camera interface\n");
 			return ret;
