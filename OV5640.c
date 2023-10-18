@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 /***********************************************************************
  *
@@ -1135,8 +1135,9 @@ int OV5640_create_sysfs_attributes(struct device *dev)
 
 void OV5640_remove_sysfs_attributes(struct device *dev)
 {
-  PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 	struct platform_device *pdev = pInfo->pLinuxDevice;
+
 	sysfs_remove_group(&pdev->dev.kobj, &ov5640_groups);
 }
 
@@ -1150,8 +1151,6 @@ void OV5640_remove_sysfs_attributes(struct device *dev)
  */
 static int ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val, CAM_NO cam)
 {
-	struct platform_device *pdev = pInfo->pLinuxDevice;
-	struct device *dev = &pdev->dev;
 	u8 buf[3] = { 0 };
 	struct i2c_msg msgs[1];
 	int ret;
@@ -1448,6 +1447,7 @@ int OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo, struct reg_value *pMode, USHORT 
 	u8 buf[3] = { 0 };
 	u16 RegAddr = 0;
 	u8 Val = 0;
+
 	for (cam = cam_first; cam <= cam_last; cam++) {
 		/*  Check if camera in use */
 		msgs[0].addr = pInfo->cameraI2CAddress[cam] >> 1;
@@ -1709,7 +1709,7 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
  */
 static void OV5640_Testpattern_Enable(struct device *dev, bool on)
 {
-  PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (on) {
 		dev_info(dev, "Enable testpattern\n");
@@ -1874,6 +1874,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 	case IOCTL_CAM_GET_ACTIVE:
 		{
 			VCAMIOCTLACTIVE *pVcamIoctl = (VCAMIOCTLACTIVE *) pBuf;
+
 			LOCK(pInfo);
 			pVcamIoctl->bActive = CamActive[CAM_1] || CamActive[CAM_2];
 			dwErr = 0;
@@ -1902,6 +1903,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 			int NewActive;
 			int res = TRUE;
 			CAM_NO cam = (Ioctl == IOCTL_CAM_SET_ACTIVE) ? CAM_1 : CAM_2;
+
 			LOCK(pInfo);
 			NewActive = (((VCAMIOCTLACTIVE *) pBuf)->bActive != 0);
 
@@ -1960,6 +1962,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 	case IOCTL_CAM_SET_FOV:
 		{
 			VCAMIOCTLFOV *pVcamFOV = (VCAMIOCTLFOV *) pBuf;
+
 			LOCK(pInfo);
 			dwErr = OV5640_set_fov(pInfo, g_camera, pVcamFOV->fov);
 			UNLOCK(pInfo);

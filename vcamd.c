@@ -67,10 +67,8 @@ static int vcam_probe(struct platform_device *pdev)
 
 	// Allocate (and zero-initiate) our control structure.
 	gpDev = (PCAM_HW_INDEP_INFO) devm_kzalloc(dev, sizeof(CAM_HW_INDEP_INFO), GFP_KERNEL);
-	if (!gpDev) {
-		dev_err(dev, "Error allocating memory for pDev, VCAM_Init failed\n");
+	if (!gpDev)
 		return -ENOMEM;
-	}
 
 	dev_set_drvdata(dev, gpDev);
 	platform_set_drvdata(pdev, gpDev);

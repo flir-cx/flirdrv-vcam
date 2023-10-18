@@ -285,6 +285,7 @@ static void Suspend(PCAM_HW_INDEP_INFO pInfo, BOOL bSuspend)
 	} else {
 		struct platform_device *pdev = pInfo->pLinuxDevice;
 		struct device *dev = &pdev->dev;
+
 		EnablePower(pInfo, true);
 		OV5640_Init(dev);
 	}
