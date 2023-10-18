@@ -1848,7 +1848,6 @@ int OV5640_Init(struct device *dev)
 	if (pInfo->cameraI2CAddress[1] == 0)	/* Only 1 active camera */
 		g_camera = CAM_1;
 
-	ret = initCamera(dev, g_camera);
 	return ret;
 }
 
@@ -1892,7 +1891,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 		break;
 
 	case IOCTL_CAM_INIT:
-		dwErr = 0;
+		dwErr = initCamera(dev, g_camera);
 		break;
 	case IOCTL_CAM_SET_ACTIVE:
 	case IOCTL_CAM_SET_2ND_ACTIVE:
@@ -1958,7 +1957,6 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 	case IOCTL_CAM_SET_FOV:
 		{
 			VCAMIOCTLFOV *pVcamFOV = (VCAMIOCTLFOV *) pBuf;
-
 			LOCK(pInfo);
 			dwErr = OV5640_set_fov(pInfo, g_camera, pVcamFOV->fov);
 			UNLOCK(pInfo);
