@@ -18,7 +18,7 @@
 #include "OV5640.h"
 
 static int initCSICamera(struct device *dev, CAM_NO camera);
-static int initCamera(struct device *dev, CAM_NO camera);
+static int ov5640_initcamera(struct device *dev, CAM_NO camera);
 
 /* Definition of DT node name, construction is error prone, so avoiding some
  * error possibilities by using definition
@@ -1790,14 +1790,14 @@ static int initCSICamera(struct device *dev, CAM_NO camera)
 	return 0;
 }
 
-/* initCamera
+/* ov5640_initcamera
  * initialize the OV5640 camera
  *
  * returns 0 on success
  *       else failed
  *
  */
-static int initCamera(struct device *dev, CAM_NO camera)
+static int ov5640_initcamera(struct device *dev, CAM_NO camera)
 {
 	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
@@ -1893,7 +1893,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 			break;
 		}
 
-		dwErr = initCamera(dev, g_camera);
+		dwErr = ov5640_initCamera(dev, g_camera);
 		break;
 	case IOCTL_CAM_SET_ACTIVE:
 	case IOCTL_CAM_SET_2ND_ACTIVE:
@@ -1941,7 +1941,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 
 			case VCAM_DRAFT:
 				/* restore last known fov */
-				dwErr = initCamera(dev, g_camera);
+				dwErr = ov5640_initCamera(dev, g_camera);
 				msleep(500);
 
 				break;
