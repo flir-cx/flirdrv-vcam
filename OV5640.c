@@ -17,6 +17,11 @@
 #include <linux/i2c.h>
 #include "OV5640.h"
 
+static u32 disable_ov5640_init = 0;
+module_param(disable_ov5640_init, uint, 0400);
+MODULE_PARM_DESC(disable_ov5640_init, "Disable initialization of visual camera during module load, default = 0 (enabled)");
+
+
 static int ov5640_initmipicamera(struct device *dev, CAM_NO camera);
 static int ov5640_initcsicamera(struct device *dev, CAM_NO camera);
 static int ov5640_initcamera(struct device *dev, CAM_NO camera);
@@ -1838,6 +1843,18 @@ int OV5640_Init(struct device *dev)
 
 	if (pInfo->cameraI2CAddress[1] == 0)	/* Only 1 active camera */
 		g_camera = CAM_1;
+
+	if (! disable_ov5640_init) {
+		/* Read the OTP memory before the initial configuration. This
+		 * is the only time the otp memory is read. If read after the
+		 * initial settings configuration is loaded the sensor can
+		 * fail to start to stream frames.
+		 */
+		ret = ov5640_get_sensor_models(pInfo, g_camera);
+		if (ret)
+			dev_err(dev, "Failed to get sensor models\n");
+		ret = ov5640_initcamera(dev, g_camera);
+	}
 
 	return ret;
 }
