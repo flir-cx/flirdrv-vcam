@@ -413,8 +413,8 @@ static DWORD do_iocontrol(struct device *dev, DWORD ioctl, PUCHAR buf, PUCHAR us
 
 static DWORD deinitialize_hw(struct device *dev)
 {
-	dev_info(dev, "deinitialize vcam driver..\n");
 	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
+
 	OV5640_remove_sysfs_attributes(dev);
 	vcam_eoco_remove_sysfs_attributes(dev);
 	/* OV5640_DeInit(pInfo); */

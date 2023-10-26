@@ -38,7 +38,7 @@ static int ov5640_initcamera(struct device *dev, CAM_NO camera);
 static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
 static void OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
 static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov);
-static void OV5640_Testpattern_Enable(struct device *dev, bool on);
+static void OV5640_Testpattern_Enable(struct device *dev, unsigned char value);
 
 #define OV5640_SETTING_HIGH_K_ELEMENTS 93
 static struct reg_value ov5640_setting_High_K[OV5640_SETTING_HIGH_K_ELEMENTS] = {
@@ -872,9 +872,6 @@ static struct reg_value ov5640_mirror_off_reg = { 0x3821, 0x07 };
 static struct reg_value ov5640_flip_on_reg = { 0x3820, 0x46 };
 static struct reg_value ov5640_flip_off_reg = { 0x3820, 0x40 };
 
-static struct reg_value ov5640_testimage_on_reg = { 0x503d, 0x80 };
-static struct reg_value ov5640_testimage_off_reg = { 0x503d, 0x00 };
-
 static struct reg_value night_mode_on = { 0x3a00, 0x7c };
 static struct reg_value night_mode_off = { 0x3a00, 0x78 };
 static struct reg_value autofocus_on = { 0x3022, 0x04 };
@@ -1060,11 +1057,18 @@ static ssize_t testpattern_store(struct device *dev, struct device_attribute *at
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
 
-	OV5640_Testpattern_Enable(dev, val);
+	OV5640_Testpattern_Enable(dev, (unsigned char)val);
 	return count;
 }
 
-
+static ssize_t testpattern_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	sprintf(buf, "Testpattern\n");
+	sprintf(buf + strlen(buf), "Set to value as specified for register 0x503d\n");
+	sprintf(buf + strlen(buf), "0x80 - Bars\n");
+	sprintf(buf + strlen(buf), "0x81 - Ant wars\n");
+	return strlen(buf);
+}
 static ssize_t mirror_enable_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
@@ -1109,7 +1113,7 @@ static ssize_t fov_show(struct device *dev, struct device_attribute *attr, char 
 
 static DEVICE_ATTR(enable_stream, 0200, NULL, enable_stream_store);
 static DEVICE_ATTR(flip, 0200, NULL, flip_store);
-static DEVICE_ATTR(testpattern, 0200, NULL, testpattern_store);
+static DEVICE_ATTR(testpattern, 0644, testpattern_show, testpattern_store);
 static DEVICE_ATTR(mirror_enable, 0200, NULL, mirror_enable_store);
 static DEVICE_ATTR(autofocus_enable, 0200, NULL, autofocus_enable_store);
 static DEVICE_ATTR(fov, 0644, fov_show, fov_store);
@@ -1718,14 +1722,18 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
  * returns void
  *
  */
-static void OV5640_Testpattern_Enable(struct device *dev, bool on)
+static void OV5640_Testpattern_Enable(struct device *dev, unsigned char value)
 {
+
 	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
-	if (on) {
-		dev_info(dev, "Enable testpattern\n");
-		OV5640_DoI2CWrite(pInfo, &ov5640_testimage_on_reg, 1, CAM_1);
+	if (value  & 0x80) {
+		struct reg_value testimg = { 0x503d, 0x0 };
+		testimg.u8Val = (u8)(value);
+		dev_info(dev, "Enable testpattern 0x%02x\n", testimg.u8Val);
+		OV5640_DoI2CWrite(pInfo, &testimg, 1, CAM_1);
 	} else {
+		struct reg_value ov5640_testimage_off_reg = { 0x503d, 0x00 };
 		dev_info(dev, "Disable testpattern\n");
 		OV5640_DoI2CWrite(pInfo, &ov5640_testimage_off_reg, 1, CAM_1);
 	}
