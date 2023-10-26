@@ -21,6 +21,10 @@ static u32 disable_ov5640_init = 0;
 module_param(disable_ov5640_init, uint, 0400);
 MODULE_PARM_DESC(disable_ov5640_init, "Disable initialization of visual camera during module load, default = 0 (enabled)");
 
+static u32 disable_nightmode = 0;
+module_param(disable_nightmode, uint, 0400);
+MODULE_PARM_DESC(disable_nightmode, "Disable nightmode, default = 0 (enabled)");
+
 
 static int ov5640_initmipicamera(struct device *dev, CAM_NO camera);
 static int ov5640_initcsicamera(struct device *dev, CAM_NO camera);
@@ -1577,10 +1581,12 @@ static void ov5640_nightmode_on_off_work(struct work_struct *work)
 {
 	CAM_HW_INDEP_INFO *pInfo = container_of(work, CAM_HW_INDEP_INFO, nightmode_work);
 
+	if(! disable_nightmode) {
 	msleep(1000);
 	OV5640_nightmode_enable(pInfo, pInfo->cam, FALSE);
 	msleep(1000);
 	OV5640_nightmode_enable(pInfo, pInfo->cam, TRUE);
+	}
 }
 
 
