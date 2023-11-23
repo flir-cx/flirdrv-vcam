@@ -38,6 +38,7 @@ static int ov5640_initcamera(struct device *dev, CAM_NO camera);
 static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
 static void OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
 static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov);
+static int ov5640_set_sharpening(struct device *dev, int enable);
 static void OV5640_Testpattern_Enable(struct device *dev, unsigned char value);
 
 #define OV5640_SETTING_HIGH_K_ELEMENTS 93
@@ -871,6 +872,8 @@ static struct reg_value ov5640_mirror_on_reg = { 0x3821, 0x01 };
 static struct reg_value ov5640_mirror_off_reg = { 0x3821, 0x07 };
 static struct reg_value ov5640_flip_on_reg = { 0x3820, 0x46 };
 static struct reg_value ov5640_flip_off_reg = { 0x3820, 0x40 };
+static struct reg_value ov5640_sharpening_on_reg = { 0x5308, 0x25 };
+static struct reg_value ov5640_sharpening_off_reg = { 0x5308, 0x40 };
 
 static struct reg_value night_mode_on = { 0x3a00, 0x7c };
 static struct reg_value night_mode_off = { 0x3a00, 0x78 };
@@ -1715,6 +1718,27 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 	return ret;
 }
 
+
+/* ov5640_set_sharpening
+ *
+ *
+ * returns 0 on success
+ *         <0, (or >0) on  error...
+ *         ERROR_NOT_SUPPORTED, setting not allowed..
+ *
+ */
+static int ov5640_set_sharpening(struct device *dev, int enable)
+{
+	int ret;
+	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
+
+	if (enable)
+		ret = OV5640_DoI2CWrite(pInfo, &ov5640_sharpening_on_reg, 1, CAM_1);
+	else
+		ret = OV5640_DoI2CWrite(pInfo, &ov5640_sharpening_off_reg, 1, CAM_1);
+	return ret;
+}
+
 /* OV5640_Testpattern_Enable
  *
  * Enables testpattern output (on CAM_1 only)
@@ -1832,6 +1856,12 @@ static int ov5640_initcamera(struct device *dev, CAM_NO camera)
 		ret = ov5640_initmipicamera(dev, camera);
 		if (ret < 0) {
 			dev_err(dev, "Failed to initialise MIPI camera interface\n");
+			return ret;
+		}
+
+		ret = ov5640_set_sharpening(dev, 0);
+		if (ret < 0) {
+			dev_err(dev, "Failed to disable sharpening\n");
 			return ret;
 		}
 	}
