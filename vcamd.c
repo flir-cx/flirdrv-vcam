@@ -35,9 +35,10 @@
 #endif
 
 
-static u32 enable_vcam = 1;
+static u32 enable_vcam = 0; // will be set to 1 by successful vcam_probe
+// note that kernel 5.x will not call "probe" for disabled devices 
 module_param(enable_vcam, uint, 0400);
-MODULE_PARM_DESC(enable_vcam, "Enable visual camera, default = 1 (enabled)");
+MODULE_PARM_DESC(enable_vcam, "Enable visual camera, 1 (enabled)");
 
 // Function prototypes
 static long VCAM_IOControl(struct file *filep,
@@ -64,6 +65,23 @@ static int vcam_probe(struct platform_device *pdev)
 {
 	int ret;
 	struct device *dev = &pdev->dev;
+#ifdef CONFIG_OF
+	struct device_node *np;
+
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 19, 0)
+	np = of_find_compatible_node(NULL, NULL, "flir,vcam");
+#else
+	np = dev->of_node;
+#endif
+	if (!of_device_is_available(np)) {
+		dev_info(dev, "vcam DISABLED in device-tree");
+		return -ENODEV;
+	}
+
+	dev_dbg(dev, "vcam not disabled - probe continues");
+	enable_vcam = 1;
+
+#endif // CONFIG_OF
 
 	// Allocate (and zero-initiate) our control structure.
 	gpDev = (PCAM_HW_INDEP_INFO) devm_kzalloc(dev, sizeof(CAM_HW_INDEP_INFO), GFP_KERNEL);
