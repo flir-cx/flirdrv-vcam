@@ -25,20 +25,8 @@ EXTRA_CFLAGS = -I$(INCLUDE_SRC)
 
 obj-m := vcam.o
 vcam-objs += vcamd.o
-
-#ifndef CONFIG_OF
-# vcam-objs += MT9P111.o
-# vcam-objs += OV7740.o
-# vcam-objs += vcam_pico.o
-# vcam-objs += vcam_neco.o
-vcam-objs += vcam_roco.o
-#endif
-
-#ifdef CONFIG_OF
-vcam-objs += vcam_evco.o
-vcam-objs += vcam_eoco.o
+vcam-objs += vcam_platform.o
 vcam-objs += OV5640.o
-#endif
 
 SRC := $(shell pwd)
 

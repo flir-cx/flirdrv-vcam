@@ -17,27 +17,24 @@
 #include <linux/i2c.h>
 #include "OV5640.h"
 
-static u32 disable_ov5640_init = 0;
-module_param(disable_ov5640_init, uint, 0400);
-MODULE_PARM_DESC(disable_ov5640_init, "Disable initialization of visual camera during module load, default = 0 (enabled)");
-
 static u32 disable_nightmode = 0;
 module_param(disable_nightmode, uint, 0400);
 MODULE_PARM_DESC(disable_nightmode, "Disable nightmode, default = 0 (enabled)");
 
 
-static int ov5640_initmipicamera(struct device *dev, CAM_NO camera);
-static int ov5640_initcsicamera(struct device *dev, CAM_NO camera);
-static int ov5640_initcamera(struct device *dev, CAM_NO camera);
+static int ov5640_initmipicamera(struct device *dev);
+static int ov5640_initcsicamera(struct device *dev);
+static int ov5640_initcamera(struct device *dev);
 
 /* Definition of DT node name, construction is error prone, so avoiding some
  * error possibilities by using definition
  */
 #define VCAM_PARALLELL_INTERFACE "vcam_parallell_interface"
 
-static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
-static void OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
-static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov);
+static DWORD OV5640_mirror_enable(struct device *dev, bool enable);
+static void OV5640_autofocus_enable(struct device *dev, bool enable);
+static int OV5640_set_fov(struct device *dev, int fov);
+
 static int ov5640_set_sharpening(struct device *dev, int enable);
 static void OV5640_Testpattern_Enable(struct device *dev, unsigned char value);
 
@@ -880,11 +877,7 @@ static struct reg_value night_mode_off = { 0x3a00, 0x78 };
 static struct reg_value autofocus_on = { 0x3022, 0x04 };
 static struct reg_value autofocus_off = { 0x3022, 0x00 };
 
-static int CamActive[CAM_ALL] = { TRUE, FALSE };
-
 static int g_vcamFOV = 54;
-static CAM_NO g_camera = CAM_ALL;
-
 
 /* OV5640 Configurations copied from WINCE Gas Camera */
 /*
@@ -1032,24 +1025,22 @@ static struct reg_value ov5640_init_interface_csi[OV5640_INIT_INTERFACE_CSI_ELEM
 static ssize_t enable_stream_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
 
-	OV5640_enable_stream(pInfo, CAM_1, val);
+	OV5640_enable_stream(dev, val);
 	return count;
 }
 
 static ssize_t flip_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
 
-	OV5640_FlipImage(pInfo, val);
+	OV5640_FlipImage(dev, val);
 	return count;
 }
 
@@ -1075,24 +1066,22 @@ static ssize_t testpattern_show(struct device *dev, struct device_attribute *att
 static ssize_t mirror_enable_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
 
-	OV5640_mirror_enable(pInfo, CAM_1, val);
+	OV5640_mirror_enable(dev, val);
 	return count;
 }
 
 static ssize_t autofocus_enable_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
 
-	OV5640_autofocus_enable(pInfo, CAM_1, val);
+	OV5640_autofocus_enable(dev, val);
 	return count;
 }
 
@@ -1100,11 +1089,10 @@ static ssize_t autofocus_enable_store(struct device *dev, struct device_attribut
 static ssize_t fov_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
-	OV5640_set_fov(pInfo, CAM_1, val);
+	OV5640_set_fov(dev, val);
 	return count;
 }
 
@@ -1138,23 +1126,15 @@ static const struct attribute_group ov5640_groups = {
 
 int OV5640_create_sysfs_attributes(struct device *dev)
 {
-	int ret;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
-	struct platform_device *pdev = pInfo->pLinuxDevice;
-
-	ret = sysfs_create_group(&pdev->dev.kobj, &ov5640_groups);
+	int ret = sysfs_create_group(&dev->kobj, &ov5640_groups);
 	if (ret)
 		pr_err("failed to add sys fs entry\n");
 	return ret;
-
 }
 
 void OV5640_remove_sysfs_attributes(struct device *dev)
 {
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
-	struct platform_device *pdev = pInfo->pLinuxDevice;
-
-	sysfs_remove_group(&pdev->dev.kobj, &ov5640_groups);
+	sysfs_remove_group(&dev->kobj, &ov5640_groups);
 }
 
 
@@ -1165,8 +1145,9 @@ void OV5640_remove_sysfs_attributes(struct device *dev)
  *
  * Returns negative errno, else 0 on success
  */
-static int ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val, CAM_NO cam)
+static int ov5640_write_reg(struct device *dev, u16 reg, u8 val)
 {
+	struct vcam_data *data = dev_get_drvdata(dev);
 	u8 buf[3] = { 0 };
 	struct i2c_msg msgs[1];
 	int ret;
@@ -1175,28 +1156,28 @@ static int ov5640_write_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 val, CAM_NO ca
 	buf[1] = reg & 0xff;
 	buf[2] = val;
 
-	msgs[0].addr = pInfo->cameraI2CAddress[cam] >> 1;
+	msgs[0].addr = data->i2c_address >> 1;
 	msgs[0].flags = I2C_M_TEN;
 	msgs[0].buf = buf;
 	msgs[0].len = 3;
 
-	ret = i2c_transfer(pInfo->hI2C, msgs, 1);
+	ret = i2c_transfer(data->i2c_bus, msgs, 1);
 	if (ret <= 0)
 		return ret;
-
 	return 0;
 }
 
 /* ov5640_read_reg
  * Returns negative errno, else 0 on success
  */
-static int ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val, CAM_NO cam)
+static int ov5640_read_reg(struct device *dev, u16 reg, u8 *val)
 {
+	struct vcam_data *data = dev_get_drvdata(dev);
 	u8 buf[2] = { 0 };
 	struct i2c_msg msgs[1];
 	int ret;
 
-	msgs[0].addr = pInfo->cameraI2CAddress[cam] >> 1;
+	msgs[0].addr = data->i2c_address >> 1;
 	msgs[0].flags = I2C_M_TEN;
 	msgs[0].len = 2;
 	msgs[0].buf = buf;
@@ -1205,7 +1186,7 @@ static int ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val, CAM_NO ca
 	buf[0] = reg >> 8;
 	buf[1] = reg & 0xff;
 
-	ret = i2c_transfer(pInfo->hI2C, msgs, 1);
+	ret = i2c_transfer(data->i2c_bus, msgs, 1);
 	if (ret <= 0)
 		return ret;
 
@@ -1214,7 +1195,7 @@ static int ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val, CAM_NO ca
 	msgs[0].len = 1;
 	msgs[0].buf = val;
 
-	ret = i2c_transfer(pInfo->hI2C, msgs, 1);
+	ret = i2c_transfer(data->i2c_bus, msgs, 1);
 	if (ret <= 0)
 		return ret;
 
@@ -1224,12 +1205,12 @@ static int ov5640_read_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 *val, CAM_NO ca
 /* ov5640_read_reg
  * Returns negative errno, else 0 on success
  */
-static int ov5640_mod_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 mask, u8 val, CAM_NO cam)
+static int ov5640_mod_reg(struct device *dev, u16 reg, u8 mask, u8 val)
 {
 	u8 readval;
 	int ret;
 
-	ret = ov5640_read_reg(pInfo, reg, &readval, cam);
+	ret = ov5640_read_reg(dev, reg, &readval);
 	if (ret < 0)
 		return ret;
 
@@ -1237,46 +1218,44 @@ static int ov5640_mod_reg(PCAM_HW_INDEP_INFO pInfo, u16 reg, u8 mask, u8 val, CA
 	val &= mask;
 	val |= readval;
 
-	return ov5640_write_reg(pInfo, reg, val, cam);
+	return ov5640_write_reg(dev, reg, val);
 }
 
 /* ov5640_get_otp_memory
  * Returns negative errno, else 0 on success
  */
-static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory, int n, CAM_NO cam)
+static int ov5640_get_otp_memory(struct device *dev, u8 *otp_memory, int n)
 {
-	struct platform_device *pdev = pInfo->pLinuxDevice;
-	struct device *dev = &pdev->dev;
 	int ret;
 	int i;
 
 	/* Enable OTP block and OPT clock */
-	ret = ov5640_mod_reg(pInfo, OV5640_SYSTEM_RESET00, BIT(4), 0, cam);
+	ret = ov5640_mod_reg(dev, OV5640_SYSTEM_RESET00, BIT(4), 0);
 	if (ret < 0) {
 		dev_err(dev, "ov5640: failed to enable OTP module\n");
 		return ret;
 	}
 
-	ret = ov5640_mod_reg(pInfo, OV5640_CLOCK_ENABLE00, BIT(4), BIT(4), cam);
+	ret = ov5640_mod_reg(dev, OV5640_CLOCK_ENABLE00, BIT(4), BIT(4));
 	if (ret < 0) {
 		dev_err(dev, "ov5640: failed to enable OTP clock\n");
 		return ret;
 	}
 
 	/* According to OTP read example in datasheet */
-	ret = ov5640_write_reg(pInfo, OV5640_OTP_PROGRAM_CTRL, 0, cam);
+	ret = ov5640_write_reg(dev, OV5640_OTP_PROGRAM_CTRL, 0);
 	if (ret < 0) {
 		dev_err(dev, "ov5640: failed to disable OTP programming\n");
 		return ret;
 	}
 
-	ret = ov5640_write_reg(pInfo, OV5640_OTP_READ_CTRL, 0, cam);
+	ret = ov5640_write_reg(dev, OV5640_OTP_READ_CTRL, 0);
 	if (ret < 0) {
 		dev_err(dev, "ov5640: failed to disable OTP read\n");
 		return ret;
 	}
 
-	ret = ov5640_write_reg(pInfo, OV5640_OTP_READ_CTRL, 1, cam);
+	ret = ov5640_write_reg(dev, OV5640_OTP_READ_CTRL, 1);
 	if (ret < 0) {
 		dev_err(dev, "ov5640: failed to enable OTP read\n");
 		return ret;
@@ -1287,8 +1266,8 @@ static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory, int n
 
 	ret = 0;
 	for (i = 0; i < n && ret >= 0; i++) {
-		ret = ov5640_read_reg(pInfo, OV5640_OTP_START_ADDR + i,
-				    &otp_memory[i], cam);
+		ret = ov5640_read_reg(dev, OV5640_OTP_START_ADDR + i,
+				    &otp_memory[i]);
 		dev_dbg(dev, "otp[0x%x] 0x%x %c\n", OV5640_OTP_START_ADDR + i,
 			otp_memory[i], otp_memory[i]);
 	}
@@ -1300,7 +1279,7 @@ static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory, int n
 
 	/* delay 10ms according to datasheet */
 	msleep(10);
-	ret = ov5640_write_reg(pInfo, OV5640_OTP_READ_CTRL, 0, cam);
+	ret = ov5640_write_reg(dev, OV5640_OTP_READ_CTRL, 0);
 	if (ret < 0) {
 		dev_err(dev, "ov5640: failed to disable OTP read\n");
 		return ret;
@@ -1310,13 +1289,13 @@ static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory, int n
 	 * clock enabled can cause the sensor to fail to start
 	 * streaming frames.
 	 */
-	ret = ov5640_mod_reg(pInfo, OV5640_SYSTEM_RESET00, BIT(4), BIT(4), cam);
+	ret = ov5640_mod_reg(dev, OV5640_SYSTEM_RESET00, BIT(4), BIT(4));
 	if (ret < 0) {
 		pr_err("ov5640: failed to disable OTP module\n");
 		return ret;
 	}
 
-	ret = ov5640_mod_reg(pInfo, OV5640_CLOCK_ENABLE00, BIT(4), 0, cam);
+	ret = ov5640_mod_reg(dev, OV5640_CLOCK_ENABLE00, BIT(4), 0);
 	if (ret < 0) {
 		pr_err("ov5640: failed to disable OTP clock\n");
 		return ret;
@@ -1325,72 +1304,41 @@ static int ov5640_get_otp_memory(PCAM_HW_INDEP_INFO pInfo, u8 *otp_memory, int n
 	return 0;
 }
 
-/* ov5640_get_sensor_models
- * Returns 0 on success, Unclear output on failure though...
- * Unclear what is returned though, since we are able to iterate over multiple cameras
- * If camera is set to CAM_ALL:
- * If ov5640_get_otp_memory fails on first camera, but succeeds on second camera output is 0
- * If ov5640_get_otp_memory succeeds  on first camera, but fails on second camera output is error from ov5640_get_otp_memory on second camera
- * If ov5640_get_otp_memory fails  on first camera and fails on second camera output is error from ov5640_get_otp_memory on second camera
- * Secondly, If ov5640_get_otp_memory fails on one of the cameras, pInfo->sensor_model[camera] is not changed (for that camera)...
- *  The sensor_model will probably implicitly end up as OV5640_STANDARD, as that could be 0 in the defined enum... and gpDev is allocated with kzalloc in vcamd.c
- *
- *
- * If camera is set to CAM_1 or CAM_2:
- * Return 0 on success, and error from ov5640_get_otp_memory on failure
- * Secondly, If ov5640_get_otp_memory fails on one of the cameras, pInfo->sensor_model[camera] is not changed (for that camera)...
- * The sensor_model will probably implicitly end up as OV5640_STANDARD, as that could be 0 in the defined enum... and gpDev is allocated with kzalloc in vcamd.c
- *
- * (if camera is set to CAM_ALL, we iterate from CAM_1 to CAM_2, else if
- * camera is set to CAM_1 we iterate from CAM_1 to CAM_1, and if camera is set
- * to CAM_2 we iterate from CAM_2 to CAM_2
- * this is setup a little strangely
- * and it would probably be better to cal a new function, ov5640_get_sensor_model once per camera instead...
- *
+/*
+ * ov5640_get_sensor_models
  */
-
-static int ov5640_get_sensor_models(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
+static int ov5640_get_sensor_models(struct device *dev)
 {
-	struct platform_device *pdev = pInfo->pLinuxDevice;
-	struct device *dev = &pdev->dev;
+	struct vcam_data *data = dev_get_drvdata(dev);
 	u8 otp_memory[OV5640_OTP_END_ADDR - OV5640_OTP_START_ADDR + 1];
-	DWORD cam;
-	DWORD cam_first = (camera == CAM_2) ? CAM_2 : CAM_1;
-	DWORD cam_last = (camera == CAM_1) ? CAM_1 : CAM_2;
 	int ret = 0;
 
-	for (cam = cam_first; cam <= cam_last; cam++) {
-		/* Read content in OTP memory */
-		ret = ov5640_get_otp_memory(pInfo, otp_memory, OV5640_OTP_END_ADDR - OV5640_OTP_START_ADDR + 1, cam);
-		if (ret) {
-			dev_err(dev, "ov5640_get_otp_memory() failed\n");
-			return ret;
-		}
+	/* Read content in OTP memory */
+	ret = ov5640_get_otp_memory(dev, otp_memory, OV5640_OTP_END_ADDR - OV5640_OTP_START_ADDR + 1);
+	if (ret) {
+		dev_err(dev, "ov5640_get_otp_memory() failed\n");
+		return ret;
+	}
 
-		/* The sensor model can be determined by the content of the
-		 * OTP memory. There are two ways the memory can be programmed
-		 * from the vendor. The memory can either contain a string
-		 * specifying the model or a specific register can contain an
-		 * integer value.
-		 */
+	/* The sensor model can be determined by the content of the
+	 * OTP memory. There are two ways the memory can be programmed
+	 * from the vendor. The memory can either contain a string
+	 * specifying the model or a specific register can contain an
+	 * integer value.
+	 */
 
+	if (strncmp(otp_memory, OV5640_SENSOR_MODEL_HIGH_K, strlen(OV5640_SENSOR_MODEL_HIGH_K)) == 0) {
 		/* Test if sensor is programmed with a string specifying model */
-		if (strncmp(otp_memory, OV5640_SENSOR_MODEL_HIGH_K, strlen(OV5640_SENSOR_MODEL_HIGH_K)) == 0) {
-			dev_info(dev, "ov5640: Sensor model id: \"%s\" (High K)\n", OV5640_SENSOR_MODEL_HIGH_K);
-			pInfo->sensor_model[cam] = OV5640_HIGH_K;
-			continue;
-		}
-
-		/* Test if sensor is programmed with a sensor id integer */
-		if (otp_memory[OV5640_SENSOR_MODEL_ID_ADDR - OV5640_OTP_START_ADDR] == OV5640_SENSOR_MODEL_HIGH_K_ID) {
-			dev_info(dev, "ov5640: Sensor model id: High K\n");
-			pInfo->sensor_model[cam] = OV5640_HIGH_K;
-			continue;
-		}
-
+		dev_info(dev, "ov5640: Sensor model id: \"%s\" (High K)\n", OV5640_SENSOR_MODEL_HIGH_K);
+		data->sensor_model = OV5640_HIGH_K;
+	} else if (otp_memory[OV5640_SENSOR_MODEL_ID_ADDR - OV5640_OTP_START_ADDR] == OV5640_SENSOR_MODEL_HIGH_K_ID) {
+	/* Test if sensor is programmed with a sensor id integer */
+		dev_info(dev, "ov5640: Sensor model id: High K\n");
+		data->sensor_model = OV5640_HIGH_K;
+	} else {
 		/* Assume the sensor is a standard model */
-		dev_info(dev, "ov5640: cam %lu Standard sensor model\n", cam);
-		pInfo->sensor_model[cam] = OV5640_STANDARD;
+		dev_info(dev, "ov5640: cam Standard sensor model\n");
+		data->sensor_model = OV5640_STANDARD;
 	}
 
 	return ret;
@@ -1401,41 +1349,23 @@ static int ov5640_get_sensor_models(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
  * configures the camera with setting acquired from ov5640_get_sensor_model_conf
  * currently (2022) only ov5640_setting_High_K available...
  *
- * Iterates over cameras if camera is CAM_ALL
- * else run for CAM_1 or CAM_2
- * Fetch config from ov56450_get_sensor_model_conf
- * If config exists, send config to each camera
- *
- * If OV5640_DoI2CWrite fails, depends on what camera is set to
- * camera = CAM_ALL, silently drops error code from OV5640_DoI2CWrite to CAM_1, returns failure code from call with CAM_2
- *
- * if camera == CAM_1 || CAM_2
- *   return error code from OV5640_DoI2CWrite
- *
  */
-static int ov5640_set_sensor_model_conf(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
+static int ov5640_set_sensor_model_conf(struct device *dev)
 {
-	struct platform_device *pdev = pInfo->pLinuxDevice;
-	struct device *dev = &pdev->dev;
-	DWORD cam;
-	DWORD cam_first = (camera == CAM_2) ? CAM_2 : CAM_1;
-	DWORD cam_last = (camera == CAM_1) ? CAM_1 : CAM_2;
+	struct vcam_data *data = dev_get_drvdata(dev);
 	int ret = 0;
 
-	for (cam = cam_first; cam <= cam_last; cam++) {
-		if (pInfo->sensor_model[camera] == OV5640_HIGH_K) {
-			dev_info(dev, "Selecting High_K config\n");
-			ret = OV5640_DoI2CWrite(pInfo, ov5640_setting_High_K, OV5640_SETTING_HIGH_K_ELEMENTS, cam);
-			if (ret) {
-				dev_err(dev, "OV5640_DoI2CWrite() failed for camera %lu\n", cam);
-				continue;
-			}
-		} else if (pInfo->sensor_model[camera] == OV5640_STANDARD) {
-			dev_info(dev, "Selecting Standard OV5640 config\n");
-		} else {
-			dev_info(dev, "Unknown OV5640\n");
-			return -1;
+	if (data->sensor_model == OV5640_HIGH_K) {
+		dev_info(dev, "Selecting High_K config\n");
+		ret = OV5640_DoI2CWrite(dev, ov5640_setting_High_K, OV5640_SETTING_HIGH_K_ELEMENTS);
+		if (ret) {
+			dev_err(dev, "OV5640_DoI2CWrite() failed for camera\n");
 		}
+	} else if (data->sensor_model == OV5640_STANDARD) {
+		dev_info(dev, "Selecting Standard OV5640 config\n");
+	} else {
+		dev_info(dev, "Unknown OV5640\n");
+		return -1;
 	}
 
 	return ret;
@@ -1443,56 +1373,43 @@ static int ov5640_set_sensor_model_conf(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 
 /* ov5640_set_sensor_model_conf
  * returns 0 on success
- *        negative error when either i2c_transfer to respective camera fails
- *
- * detects of camera is set as CAM_ALL, CAM_1 or CAM_2
- * iterates on CAM_1 -- CAM_2 if camera is CAM_ALL
- * iterates on CAM_1 -- CAM_1 if camera is CAM_1
- * iterates on CAM_2 -- CAM_2 if camera is CAM_2
+ *        negative error when i2c_transfer to failes
  *
  */
-int OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo, struct reg_value *pMode, USHORT elements, CAM_NO camera)
+int OV5640_DoI2CWrite(struct device *dev, struct reg_value *pMode, USHORT elements)
 {
-	struct platform_device *pdev = pInfo->pLinuxDevice;
-	struct device *dev = &pdev->dev;
+	struct vcam_data *data = dev_get_drvdata(dev);
 	struct i2c_msg msgs[1];
 	int i, retval = 0;
-	DWORD cam;
-	DWORD cam_first = (camera == CAM_2) ? CAM_2 : CAM_1;
-	DWORD cam_last = (camera == CAM_1) ? CAM_1 : CAM_2;
 	u8 buf[3] = { 0 };
 	u16 RegAddr = 0;
 	u8 Val = 0;
 
-	for (cam = cam_first; cam <= cam_last; cam++) {
-		/*  Check if camera in use */
-		msgs[0].addr = pInfo->cameraI2CAddress[cam] >> 1;
-		if (msgs[0].addr == 0)
-			continue;
-		msgs[0].flags = 0;
-		msgs[0].buf = buf;
-		msgs[0].len = 3;
+	/*  Check if camera in use */
+	msgs[0].addr = data->i2c_address >> 1;
+	msgs[0].flags = 0;
+	msgs[0].buf = buf;
+	msgs[0].len = 3;
 
-		for (i = 0; i < elements; ++i) {
-			RegAddr = pMode[i].u16RegAddr;
-			Val = pMode[i].u8Val;
+	for (i = 0; i < elements; ++i) {
+		RegAddr = pMode[i].u16RegAddr;
+		Val = pMode[i].u8Val;
 
-			buf[0] = RegAddr >> 8;
-			buf[1] = RegAddr & 0xff;
-			buf[2] = Val;
+		buf[0] = RegAddr >> 8;
+		buf[1] = RegAddr & 0xff;
+		buf[2] = Val;
 
-			retval = i2c_transfer(pInfo->hI2C, msgs, 1);
+		retval = i2c_transfer(data->i2c_bus, msgs, 1);
 
-			if (retval == -EAGAIN) {
-				msleep(100);
-				retval = i2c_transfer(pInfo->hI2C, msgs, 1);
-			}
+		if (retval == -EAGAIN) {
+			msleep(100);
+			retval = i2c_transfer(data->i2c_bus, msgs, 1);
+		}
 
-			if (retval <= 0) {
-				dev_err(dev, "failed on index i=%i with error %i (data 0x%x:0x%x)\n",
-					i, retval, RegAddr, Val);
-				return retval;
-			}
+		if (retval <= 0) {
+			dev_err(dev, "failed on index i=%i with error %i (data 0x%x:0x%x)\n",
+				i, retval, RegAddr, Val);
+			return retval;
 		}
 	}
 
@@ -1504,12 +1421,12 @@ int OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo, struct reg_value *pMode, USHORT 
  *
  *
  */
-void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
+void OV5640_enable_stream(struct device *dev, bool enable)
 {
 	if (enable)
-		OV5640_DoI2CWrite(pInfo, &stream_on, 1, camera);
+		OV5640_DoI2CWrite(dev, &stream_on, 1);
 	else
-		OV5640_DoI2CWrite(pInfo, &stream_off, 1, camera);
+		OV5640_DoI2CWrite(dev, &stream_off, 1);
 }
 
 /* OV5640_nightmode_enable
@@ -1517,12 +1434,13 @@ void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
  *
  *
  */
-static void OV5640_nightmode_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
+static void OV5640_nightmode_enable(struct device *dev, bool enable)
 {
+
 	if (enable)
-		OV5640_DoI2CWrite(pInfo, &night_mode_on, 1, camera);
+		OV5640_DoI2CWrite(dev, &night_mode_on, 1);
 	else
-		OV5640_DoI2CWrite(pInfo, &night_mode_off, 1, camera);
+		OV5640_DoI2CWrite(dev, &night_mode_off, 1);
 }
 
 /* OV5640_nightmode_enable
@@ -1534,14 +1452,14 @@ static void OV5640_nightmode_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, boo
  *
  *
  */
-static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
+static DWORD OV5640_mirror_enable(struct device *dev, bool enable)
 {
 	int ret;
 
 	if (enable)
-		ret = OV5640_DoI2CWrite(pInfo, &ov5640_mirror_on_reg, 1, camera);
+		ret = OV5640_DoI2CWrite(dev, &ov5640_mirror_on_reg, 1);
 	else
-		ret = OV5640_DoI2CWrite(pInfo, &ov5640_mirror_off_reg, 1, camera);
+		ret = OV5640_DoI2CWrite(dev, &ov5640_mirror_off_reg, 1);
 	return ret;
 }
 
@@ -1550,12 +1468,12 @@ static DWORD OV5640_mirror_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool 
  *
  *
  */
-static void OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable)
+static void OV5640_autofocus_enable(struct device *dev, bool enable)
 {
 	if (enable)
-		OV5640_DoI2CWrite(pInfo, &autofocus_on, 1, camera);
+		OV5640_DoI2CWrite(dev, &autofocus_on, 1);
 	else
-		OV5640_DoI2CWrite(pInfo, &autofocus_off, 1, camera);
+		OV5640_DoI2CWrite(dev, &autofocus_off, 1);
 }
 
 /* OV5640_set_exposure
@@ -1563,21 +1481,21 @@ static void OV5640_autofocus_enable(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, boo
  *
  * returns void
  */
-static void OV5640_set_exposure(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int exp)
+static void OV5640_set_exposure(struct device *dev, int exp)
 {
 	struct reg_value temp;
 
 	temp.u16RegAddr = 0x3500;
 	temp.u8Val = ((exp >> 16) & 0x0f);
-	OV5640_DoI2CWrite(pInfo, &temp, 1, camera);
+	OV5640_DoI2CWrite(dev, &temp, 1);
 
 	temp.u16RegAddr = 0x3501;
 	temp.u8Val = ((exp >> 8) & 0xff);
-	OV5640_DoI2CWrite(pInfo, &temp, 1, camera);
+	OV5640_DoI2CWrite(dev, &temp, 1);
 
 	temp.u16RegAddr = 0x3502;
 	temp.u8Val = (exp & 0xf0);
-	OV5640_DoI2CWrite(pInfo, &temp, 1, camera);
+	OV5640_DoI2CWrite(dev, &temp, 1);
 }
 
 /* ov5640_nightmode_on_off_work
@@ -1586,13 +1504,14 @@ static void OV5640_set_exposure(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int exp
  */
 static void ov5640_nightmode_on_off_work(struct work_struct *work)
 {
-	CAM_HW_INDEP_INFO *pInfo = container_of(work, CAM_HW_INDEP_INFO, nightmode_work);
+	struct vcam_data *data = container_of(work, struct vcam_data, nightmode_work);
+	struct device *dev = data->dev;
 
 	if(! disable_nightmode) {
 	msleep(1000);
-	OV5640_nightmode_enable(pInfo, pInfo->cam, FALSE);
+	OV5640_nightmode_enable(dev, FALSE);
 	msleep(1000);
-	OV5640_nightmode_enable(pInfo, pInfo->cam, TRUE);
+	OV5640_nightmode_enable(dev, TRUE);
 	}
 }
 
@@ -1609,21 +1528,20 @@ static void ov5640_nightmode_on_off_work(struct work_struct *work)
  *                image flip and mirror enable, might also be set in ov5640_init_settings_9fps_5MP and similar structs...
  *
  */
-static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
+static int OV5640_set_5MP(struct device *dev)
 {
+	struct vcam_data *data = dev_get_drvdata(dev);
 	int ret;
-	struct platform_device *pdev = pInfo->pLinuxDevice;
-	struct device *dev = &pdev->dev;
 
-	bool ov5640_using_mipi_interface = !of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL);
+	bool ov5640_using_mipi_interface = !of_find_property(dev->of_node, VCAM_PARALLELL_INTERFACE, NULL);
 
-	OV5640_enable_stream(pInfo, camera, FALSE);
+	OV5640_enable_stream(dev, FALSE);
 
 	/* Initialize camera settings */
 	if (ov5640_using_mipi_interface)
-		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_9fps_5MP, OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS, camera);
+		ret = OV5640_DoI2CWrite(dev, ov5640_init_setting_9fps_5MP, OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS);
 	else
-		ret = OV5640_DoI2CWrite(pInfo, ov5640_init_setting_5MP, OV5640_INIT_SETTING_5MP_ELEMENTS, camera);
+		ret = OV5640_DoI2CWrite(dev, ov5640_init_setting_5MP, OV5640_INIT_SETTING_5MP_ELEMENTS);
 
 	if (ret) {
 		dev_err(dev, "Failed to set %s 5MP mode\n", ov5640_using_mipi_interface ? "MIPI" : "parallell");
@@ -1631,10 +1549,10 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 	}
 
 	/* Write model specific configuration */
-	ov5640_set_sensor_model_conf(pInfo, camera);
+	ov5640_set_sensor_model_conf(dev);
 
-	if (pInfo->edge_enhancement) {
-		ret = OV5640_DoI2CWrite(pInfo, &ov5640_edge_enhancement, 1, camera);
+	if (data->edge_enhancement) {
+		ret = OV5640_DoI2CWrite(dev, &ov5640_edge_enhancement, 1);
 		if (ret) {
 			dev_err(dev, "Failed to enable edge enhancement\n");
 			return ret;
@@ -1643,20 +1561,20 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
 
 	if (ov5640_using_mipi_interface) {
 		/* Set default flip */
-		ret = OV5640_FlipImage(pInfo, FALSE);
+		ret = OV5640_FlipImage(dev, FALSE);
 		if (ret) {
 			dev_err(dev, "Failed to call OV5640_FlipImage\n");
 			return ret;
 		}
 
-		ret = OV5640_mirror_enable(pInfo, camera, pInfo->flipped_sensor);
+		ret = OV5640_mirror_enable(dev, data->flipped_sensor);
 		if (ret) {
 			dev_err(dev, "Failed to call OV5640_mirror_enable\n");
 			return ret;
 		}
 	}
 
-	OV5640_enable_stream(pInfo, camera, TRUE);
+	OV5640_enable_stream(dev, TRUE);
 	return 0;
 }
 
@@ -1669,13 +1587,12 @@ static int OV5640_set_5MP(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera)
  *         ERROR_NOT_SUPPORTED, setting not allowed..
  *
  */
-static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
+static int OV5640_set_fov(struct device *dev, int fov)
 {
+	struct vcam_data *data = dev_get_drvdata(dev);
 	int ret = ERROR_NOT_SUPPORTED;
 	int elements;
 	struct reg_value *setting;
-	struct platform_device *pdev = pInfo->pLinuxDevice;
-	struct device *dev = &pdev->dev;
 
 	switch (fov) {
 	case 54:
@@ -1703,21 +1620,20 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 	}
 	if (ret == 0) {
 		dev_info(dev, "Change fov to %i\n", fov);
-		ov5640_set_sensor_model_conf(pInfo, camera);
-		OV5640_enable_stream(pInfo, camera, FALSE);
-		ret = OV5640_DoI2CWrite(pInfo, setting, elements, camera);
+		ov5640_set_sensor_model_conf(dev);
+		OV5640_enable_stream(dev, FALSE);
+		ret = OV5640_DoI2CWrite(dev, setting, elements);
 
-		OV5640_enable_stream(pInfo, camera, TRUE);
+		OV5640_enable_stream(dev, TRUE);
 
 		if (ret == 0) {
 			g_vcamFOV = fov;
-			schedule_work(&pInfo->nightmode_work);
+			schedule_work(&data->nightmode_work);
 		}
 	}
 
 	return ret;
 }
-
 
 /* ov5640_set_sharpening
  *
@@ -1730,12 +1646,11 @@ static int OV5640_set_fov(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, int fov)
 static int ov5640_set_sharpening(struct device *dev, int enable)
 {
 	int ret;
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
 
 	if (enable)
-		ret = OV5640_DoI2CWrite(pInfo, &ov5640_sharpening_on_reg, 1, CAM_1);
+		ret = OV5640_DoI2CWrite(dev, &ov5640_sharpening_on_reg, 1);
 	else
-		ret = OV5640_DoI2CWrite(pInfo, &ov5640_sharpening_off_reg, 1, CAM_1);
+		ret = OV5640_DoI2CWrite(dev, &ov5640_sharpening_off_reg, 1);
 	return ret;
 }
 
@@ -1748,18 +1663,15 @@ static int ov5640_set_sharpening(struct device *dev, int enable)
  */
 static void OV5640_Testpattern_Enable(struct device *dev, unsigned char value)
 {
-
-	PCAM_HW_INDEP_INFO pInfo = (PCAM_HW_INDEP_INFO)dev_get_drvdata(dev);
-
 	if (value  & 0x80) {
 		struct reg_value testimg = { 0x503d, 0x0 };
 		testimg.u8Val = (u8)(value);
 		dev_info(dev, "Enable testpattern 0x%02x\n", testimg.u8Val);
-		OV5640_DoI2CWrite(pInfo, &testimg, 1, CAM_1);
+		OV5640_DoI2CWrite(dev, &testimg, 1);
 	} else {
 		struct reg_value ov5640_testimage_off_reg = { 0x503d, 0x00 };
 		dev_info(dev, "Disable testpattern\n");
-		OV5640_DoI2CWrite(pInfo, &ov5640_testimage_off_reg, 1, CAM_1);
+		OV5640_DoI2CWrite(dev, &ov5640_testimage_off_reg, 1);
 	}
 }
 
@@ -1772,17 +1684,18 @@ static void OV5640_Testpattern_Enable(struct device *dev, unsigned char value)
  * 0 on success and positive value on error...
  *
  */
-DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
+DWORD OV5640_FlipImage(struct device *dev, bool flip)
 {
+	struct vcam_data *data = dev_get_drvdata(dev);
 	struct reg_value *regval;
 
-	if ((pInfo->flipped_sensor && !flip) ||
-	    ((!pInfo->flipped_sensor && flip)))
+	if ((data->flipped_sensor && !flip) ||
+	    ((!data->flipped_sensor && flip)))
 		regval = &ov5640_flip_on_reg;
 	else
 		regval = &ov5640_flip_off_reg;
 
-	return OV5640_DoI2CWrite(pInfo, regval, 1, g_camera);
+	return OV5640_DoI2CWrite(dev, regval, 1);
 }
 
 
@@ -1792,13 +1705,12 @@ DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip)
  * returns 0 on succes
  *         else failure
  */
-static int ov5640_initmipicamera(struct device *dev, CAM_NO camera)
+static int ov5640_initmipicamera(struct device *dev)
 {
-	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
 	dev_info(dev, "MIPI interface used\n");
-	ret = OV5640_set_5MP(pInfo, camera);
+	ret = OV5640_set_5MP(dev);
 	if (ret) {
 		dev_err(dev, "Failed to configure MIPI camera interface\n");
 		return ret;
@@ -1813,19 +1725,18 @@ static int ov5640_initmipicamera(struct device *dev, CAM_NO camera)
  * returns 0 on succes
  *         else failure
  */
-static int ov5640_initcsicamera(struct device *dev, CAM_NO camera)
+static int ov5640_initcsicamera(struct device *dev)
 {
-	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
-	dev_info(dev, "cam %u, Parallell interface\n", camera);
-	ret = OV5640_DoI2CWrite(pInfo, ov5640_init_interface_csi, OV5640_INIT_INTERFACE_CSI_ELEMENTS, camera);
+	dev_info(dev, "cam, Parallell interface\n");
+	ret = OV5640_DoI2CWrite(dev, ov5640_init_interface_csi, OV5640_INIT_INTERFACE_CSI_ELEMENTS);
 	if (ret) {
 		dev_err(dev, "Failed to configure parallell csi camera interface\n");
 		return ret;
 	}
 
-	ret = OV5640_mirror_enable(pInfo, g_camera, true);
+	ret = OV5640_mirror_enable(dev, true);
 	if (ret < 0) {
 		dev_err(dev, "Failed to enable mirror on sensor\n");
 		return ret;
@@ -1841,19 +1752,18 @@ static int ov5640_initcsicamera(struct device *dev, CAM_NO camera)
  *       else failed
  *
  */
-static int ov5640_initcamera(struct device *dev, CAM_NO camera)
+static int ov5640_initcamera(struct device *dev)
 {
-	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
 	int ret = 0;
 
-	if (of_find_property(pInfo->node, VCAM_PARALLELL_INTERFACE, NULL)) {
-		ret = ov5640_initcsicamera(dev, camera);
+	if (of_find_property(dev->of_node, VCAM_PARALLELL_INTERFACE, NULL)) {
+		ret = ov5640_initcsicamera(dev);
 		if (ret < 0) {
 			dev_err(dev, "Failed to initialise parallell camera interface\n");
 			return ret;
 		}
 	} else {
-		ret = ov5640_initmipicamera(dev, camera);
+		ret = ov5640_initmipicamera(dev);
 		if (ret < 0) {
 			dev_err(dev, "Failed to initialise MIPI camera interface\n");
 			return ret;
@@ -1866,7 +1776,7 @@ static int ov5640_initcamera(struct device *dev, CAM_NO camera)
 		}
 	}
 
-	ret = OV5640_set_fov(pInfo, g_camera, g_vcamFOV);
+	ret = OV5640_set_fov(dev, g_vcamFOV);
 	if (ret)
 		return ret;
 
@@ -1875,119 +1785,70 @@ static int ov5640_initcamera(struct device *dev, CAM_NO camera)
 /* OV5640_Init
  *
  * Start initializing cameras...
- * Would prefer if we remove the CAM_ALL setting...
- *
  */
 int OV5640_Init(struct device *dev)
 {
-	PCAM_HW_INDEP_INFO pInfo = dev_get_drvdata(dev);
+	struct vcam_data *data = dev_get_drvdata(dev);
 	int ret = 0;
 
-	INIT_WORK(&pInfo->nightmode_work, ov5640_nightmode_on_off_work);
-
-	if (pInfo->cameraI2CAddress[1] == 0)	/* Only 1 active camera */
-		g_camera = CAM_1;
-
-	if (! disable_ov5640_init) {
-		/* Read the OTP memory before the initial configuration. This
-		 * is the only time the otp memory is read. If read after the
-		 * initial settings configuration is loaded the sensor can
-		 * fail to start to stream frames.
-		 */
-		ret = ov5640_get_sensor_models(pInfo, g_camera);
-		if (ret)
-			dev_err(dev, "Failed to get sensor models\n");
-		ret = ov5640_initcamera(dev, g_camera);
-	}
-
+	INIT_WORK(&data->nightmode_work, ov5640_nightmode_on_off_work);
 	return ret;
 }
 
-/* OV5640_IOControl
+/* ov5640_ioctl
  *
  */
-DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHAR pUserBuf)
+int ov5640_ioctl(struct device *dev, int cmd, PUCHAR pBuf, PUCHAR pUserBuf)
 {
-	DWORD dwErr = ERROR_INVALID_PARAMETER;
+	int ret;
+	struct vcam_data *data = dev_get_drvdata(dev);
 	static int TestActive;
-	struct platform_device *pdev = pInfo->pLinuxDevice;
-	struct device *dev = &pdev->dev;
 
-	switch (Ioctl) {
+	switch (cmd) {
 	case IOCTL_CAM_GET_TEST:
 		{
-			LOCK(pInfo);
+			down(&data->sem);
 			((VCAMIOCTLTEST *) pBuf)->bTestMode = TestActive;
-			dwErr = 0;
-			UNLOCK(pInfo);
+			ret = 0;
+			up(&data->sem);
 		}
 		break;
 
 	case IOCTL_CAM_SET_TEST:
 		{
-			LOCK(pInfo);
+			down(&data->sem);
 			TestActive = (((VCAMIOCTLTEST *) pBuf)->bTestMode != 0);
-			dwErr = 0;
-			UNLOCK(pInfo);
-		}
-		break;
-
-	case IOCTL_CAM_GET_ACTIVE:
-		{
-			VCAMIOCTLACTIVE *pVcamIoctl = (VCAMIOCTLACTIVE *) pBuf;
-
-			LOCK(pInfo);
-			pVcamIoctl->bActive = CamActive[CAM_1] || CamActive[CAM_2];
-			dwErr = 0;
-			UNLOCK(pInfo);
+			ret = 0;
+			up(&data->sem);
 		}
 		break;
 
 	case IOCTL_CAM_INIT:
-
 		/* Read the OTP memory before the initial configuration. This
 		 * is the only time the otp memory is read. If read after the
 		 * initial settings configuration is loaded the sensor can
 		 * fail to start to stream frames.
 		 */
-		dwErr = ov5640_get_sensor_models(pInfo, g_camera);
-		if (dwErr) {
+		ret = ov5640_get_sensor_models(dev);
+		if (ret) {
 			dev_err(dev, "Failed to get sensor models\n");
 			break;
 		}
 
-		dwErr = ov5640_initcamera(dev, g_camera);
+		ret = ov5640_initcamera(dev);
 		break;
-	case IOCTL_CAM_SET_ACTIVE:
-	case IOCTL_CAM_SET_2ND_ACTIVE:
-		{
-			int NewActive;
-			int res = TRUE;
-			CAM_NO cam = (Ioctl == IOCTL_CAM_SET_ACTIVE) ? CAM_1 : CAM_2;
-
-			LOCK(pInfo);
-			NewActive = (((VCAMIOCTLACTIVE *) pBuf)->bActive != 0);
-
-			if (res) {
-				CamActive[cam] = NewActive;
-				dwErr = ERROR_SUCCESS;
-			}
-			UNLOCK(pInfo);
-		}
-		break;
-
 	case IOCTL_CAM_SET_FLASH:
 		{
 			VCAMIOCTLFLASH *pFlashData = (VCAMIOCTLFLASH *) pBuf;
 
-			LOCK(pInfo);
+			down(&data->sem);
 
-			dwErr = pInfo->pSetTorchState(pInfo, pFlashData);
+			ret = data->ops.set_torchstate(dev, pFlashData);
 			/* set fast exposure to compensate for led brightness */
 			if (pFlashData->bTorchOn)
-				OV5640_set_exposure(pInfo, g_camera, 0x2000);
+				OV5640_set_exposure(dev, 0x2000);
 
-			UNLOCK(pInfo);
+			up(&data->sem);
 		}
 		break;
 
@@ -1995,19 +1856,18 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 		{
 			VCAMIOCTLCAMMODE *pMode = (VCAMIOCTLCAMMODE *) pBuf;
 
-			LOCK(pInfo);
+			down(&data->sem);
 			switch (pMode->eCamMode) {
 			case VCAM_STILL:
 				/* set camera to 5MP full size mode */
-				dwErr = OV5640_set_5MP(pInfo, g_camera);
+				ret = OV5640_set_5MP(dev);
 				msleep(800);
 				break;
 
 			case VCAM_DRAFT:
 				/* restore last known fov */
-				dwErr = ov5640_initcamera(dev, g_camera);
+				ret = ov5640_initcamera(dev);
 				msleep(500);
-
 				break;
 
 			case VCAM_UNDEFINED:
@@ -2016,7 +1876,7 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 				dev_err(dev, "VCAM Unsupported IOCTL_CAM_SET_CAMMODE %d\n", pMode->eCamMode);
 				break;
 			}
-			UNLOCK(pInfo);
+			up(&data->sem);
 		}
 		break;
 
@@ -2024,39 +1884,31 @@ DWORD OV5640_IOControl(PCAM_HW_INDEP_INFO pInfo, DWORD Ioctl, PUCHAR pBuf, PUCHA
 		{
 			VCAMIOCTLFOV *pVcamFOV = (VCAMIOCTLFOV *) pBuf;
 
-			LOCK(pInfo);
-			dwErr = OV5640_set_fov(pInfo, g_camera, pVcamFOV->fov);
-			UNLOCK(pInfo);
+			down(&data->sem);
+			ret = OV5640_set_fov(dev, pVcamFOV->fov);
+			up(&data->sem);
 		}
 		break;
 	case IOCTL_CAM_GET_FOV:
-		LOCK(pInfo);
+		down(&data->sem);
 		((VCAMIOCTLFOV *) pBuf)->fov = g_vcamFOV;
-		dwErr = 0;
-		UNLOCK(pInfo);
+		ret = 0;
+		up(&data->sem);
 		break;
-
-
 	case IOCTL_CAM_MIRROR_ON:
-		dwErr = OV5640_mirror_enable(pInfo, g_camera, TRUE);
-		break;
 	case IOCTL_CAM_MIRROR_OFF:
-		dwErr = OV5640_mirror_enable(pInfo, g_camera, FALSE);
+		ret = OV5640_mirror_enable(dev, (cmd == IOCTL_CAM_MIRROR_ON));
 		break;
 	case IOCTL_CAM_FLIP_ON:
-		LOCK(pInfo);
-		dwErr = OV5640_FlipImage(pInfo, true);
-		UNLOCK(pInfo);
-		break;
 	case IOCTL_CAM_FLIP_OFF:
-		LOCK(pInfo);
-		dwErr = OV5640_FlipImage(pInfo, false);
-		UNLOCK(pInfo);
+		down(&data->sem);
+		ret = OV5640_FlipImage(dev, (cmd == IOCTL_CAM_FLIP_ON));
+		up(&data->sem);
 		break;
 	default:
-		dev_err(dev, "VCAM Unsupported IOCTL code %lu\n", Ioctl);
-		dwErr = ERROR_NOT_SUPPORTED;
+		dev_err(dev, "VCAM Unsupported IOCTL code %i\n", cmd);
+		ret = ERROR_NOT_SUPPORTED;
 		break;
 	}
-	return dwErr;
+	return ret;
 }

@@ -18,22 +18,16 @@
 #define OV5640_SENSOR_MODEL_CSP         "OV5640-A71A_45039C15J"
 #define OV5640_SENSOR_MODEL_HIGH_K_ID   0x02
 
-// Local typedefs
-
-typedef enum { CAM_1, CAM_2, CAM_ALL } CAM_NO;
-
-// Local functions
-
-// Local variables
 struct reg_value {
 	u16 u16RegAddr;
 	u8 u8Val;
 };
-int OV5640_DoI2CWrite(PCAM_HW_INDEP_INFO pInfo,
-		       struct reg_value *pMode, USHORT elements, CAM_NO camera);
-DWORD OV5640_FlipImage(PCAM_HW_INDEP_INFO pInfo, bool flip);
-void OV5640_enable_stream(PCAM_HW_INDEP_INFO pInfo, CAM_NO camera, bool enable);
+int OV5640_DoI2CWrite(struct device *dev, struct reg_value *pMode, USHORT elements);
+DWORD OV5640_FlipImage(struct device *dev, bool flip);
+void OV5640_enable_stream(struct device *dev, bool enable);
 int OV5640_create_sysfs_attributes(struct device *dev);
 void OV5640_remove_sysfs_attributes(struct device *dev);
+int OV5640_Init(struct device *dev);
+int ov5640_ioctl(struct device *dev, int cmd, PUCHAR pBuf, PUCHAR pUserBuf);
 
 #endif
