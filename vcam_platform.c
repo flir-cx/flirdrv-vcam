@@ -14,12 +14,12 @@
 #include "ov5640.h"
 // Function prototypes
 static void set_power(struct device *dev, bool enable);
-static DWORD get_torchstate(struct device *dev, VCAMIOCTLFLASH *pFlashData);
-static DWORD set_torchstate(struct device *dev, VCAMIOCTLFLASH *pFlashData);
+static int get_torchstate(struct device *dev, VCAMIOCTLFLASH *pFlashData);
+static int set_torchstate(struct device *dev, VCAMIOCTLFLASH *pFlashData);
 static void set_suspend(struct device *dev, bool enable);
 static int do_iocontrol(struct device *dev, int cmd, PUCHAR buf, PUCHAR userbuf);
 struct led_classdev *find_torch(void);
-static DWORD deinitialize_hw(struct device *dev);
+static void deinitialize_hw(struct device *dev);
 
 static ssize_t vcam_eoco_power_store(struct device *dev, struct device_attribute *attr,
 				     const char *buf, size_t count)
@@ -146,7 +146,7 @@ static void set_power(struct device *dev, bool enable)
 //
 //-----------------------------------------------------------------------------
 
-DWORD PlatformInitHW(struct device *dev)
+int platform_inithw(struct device *dev)
 {
 	int ret = 0;
 	struct vcam_data *data = dev_get_drvdata(dev);
@@ -226,10 +226,7 @@ DWORD PlatformInitHW(struct device *dev)
 	}
 
 	data->ops.set_power(dev, true);
-	ret = ov5640_init(dev);
-	if (ret) {
-		dev_err(dev, "error during initialization of OV5640\n");
-	}
+	ov5640_init(dev);
 
 	ret = vcam_eoco_create_sysfs_attributes(dev);
 	if (ret)
@@ -260,7 +257,7 @@ out_eoco_sysfs:
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD get_torchstate(struct device *dev, VCAMIOCTLFLASH *pFlashData)
+int get_torchstate(struct device *dev, VCAMIOCTLFLASH *pFlashData)
 {
 	int ret;
 	struct led_classdev *led = find_torch();
@@ -294,7 +291,7 @@ DWORD get_torchstate(struct device *dev, VCAMIOCTLFLASH *pFlashData)
 // Returns:
 //
 //-----------------------------------------------------------------------------
-DWORD set_torchstate(struct device *dev, VCAMIOCTLFLASH *pFlashData)
+int set_torchstate(struct device *dev, VCAMIOCTLFLASH *pFlashData)
 {
 	int ret;
 	struct led_classdev *led = find_torch();
@@ -394,7 +391,7 @@ struct led_classdev *find_torch(void)
 }
 
 
-static DWORD deinitialize_hw(struct device *dev)
+static void deinitialize_hw(struct device *dev)
 {
 	struct vcam_data *data = dev_get_drvdata(dev);
 
@@ -404,5 +401,4 @@ static DWORD deinitialize_hw(struct device *dev)
 	data->ops.set_power(dev, false);
 	
 	i2c_put_adapter(data->i2c_bus);
-	return 0;
 }

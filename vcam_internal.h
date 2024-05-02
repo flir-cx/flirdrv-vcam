@@ -23,11 +23,11 @@ enum sensor_model {
 // this structure keeps track of the device instance
 struct vcam_ops {
 	// Function pointers
-	DWORD(*get_torchstate) (struct device *dev, VCAMIOCTLFLASH *pFlashData);
-	DWORD(*set_torchstate) (struct device *dev, VCAMIOCTLFLASH *pFlashData);
+	int (*get_torchstate) (struct device *dev, VCAMIOCTLFLASH *pFlashData);
+	int (*set_torchstate) (struct device *dev, VCAMIOCTLFLASH *pFlashData);
 	void (*set_power)(struct device *dev, bool enable);
 	int (*do_iocontrol)(struct device *dev, int cmd, PUCHAR buf, PUCHAR userbuf);
-	DWORD (*deinitialize_hw)(struct device *dev);
+	void (*deinitialize_hw)(struct device *dev);
 };
 
 struct vcam_data {
@@ -52,6 +52,6 @@ struct vcam_data {
 	struct semaphore sem;	// serialize access to this device's state
 };
 
-DWORD PlatformInitHW(struct device *dev);
+int platform_inithw(struct device *dev);
 
 #endif //_VCAM_INTERNAL_H_

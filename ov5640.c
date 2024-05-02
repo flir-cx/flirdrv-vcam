@@ -31,7 +31,7 @@ static int ov5640_initcamera(struct device *dev);
  */
 #define VCAM_PARALLELL_INTERFACE "vcam_parallell_interface"
 
-static DWORD ov5640_mirror_enable(struct device *dev, bool enable);
+static int ov5640_mirror_enable(struct device *dev, bool enable);
 static void ov5640_autofocus_enable(struct device *dev, bool enable);
 static int ov5640_set_fov(struct device *dev, int fov);
 
@@ -1143,7 +1143,8 @@ void ov5640_remove_sysfs_attributes(struct device *dev)
 
 /* ov5640_write_reg
  *
- * Returns negative errno, else 0 on success
+ * Returns 0 on success
+ *         negative on error
  */
 static int ov5640_write_reg(struct device *dev, u16 reg, u8 val)
 {
@@ -1168,7 +1169,9 @@ static int ov5640_write_reg(struct device *dev, u16 reg, u8 val)
 }
 
 /* ov5640_read_reg
- * Returns negative errno, else 0 on success
+ *
+ * Returns 0 on success
+ *         negative on error
  */
 static int ov5640_read_reg(struct device *dev, u16 reg, u8 *val)
 {
@@ -1203,7 +1206,9 @@ static int ov5640_read_reg(struct device *dev, u16 reg, u8 *val)
 }
 
 /* ov5640_read_reg
- * Returns negative errno, else 0 on success
+ *
+ * Returns 0 on success
+ *         negative on error
  */
 static int ov5640_mod_reg(struct device *dev, u16 reg, u8 mask, u8 val)
 {
@@ -1222,7 +1227,9 @@ static int ov5640_mod_reg(struct device *dev, u16 reg, u8 mask, u8 val)
 }
 
 /* ov5640_get_otp_memory
- * Returns negative errno, else 0 on success
+ *
+ * Returns 0 on success
+ *         negative on error
  */
 static int ov5640_get_otp_memory(struct device *dev, u8 *otp_memory, int n)
 {
@@ -1372,8 +1379,9 @@ static int ov5640_set_sensor_model_conf(struct device *dev)
 }
 
 /* ov5640_set_sensor_model_conf
- * returns 0 on success
- *        negative error when i2c_transfer to failes
+ *
+ * Returns 0 on success
+ *         negative on error
  *
  */
 int ov5640_doi2cwrite(struct device *dev, struct reg_value *pMode, USHORT elements)
@@ -1417,8 +1425,6 @@ int ov5640_doi2cwrite(struct device *dev, struct reg_value *pMode, USHORT elemen
 }
 
 /* OV640_enable_stream
- * returns void
- *
  *
  */
 void ov5640_enable_stream(struct device *dev, bool enable)
@@ -1430,8 +1436,6 @@ void ov5640_enable_stream(struct device *dev, bool enable)
 }
 
 /* ov5640_nightmode_enable
- * returns void
- *
  *
  */
 static void ov5640_nightmode_enable(struct device *dev, bool enable)
@@ -1444,15 +1448,15 @@ static void ov5640_nightmode_enable(struct device *dev, bool enable)
 }
 
 /* ov5640_nightmode_enable
- * returns DWORD on error (dword is unsigned long?)
+ * returns int on error
  *
- * Return value is from output ov5640_doi2cwrite, which returns an integer error value
- * that is 0 on success, and negative on error, this is casted? to a DWORD, should end up as
+ * Return value is an integer error value
+ * that is 0 on success, and negative on error, this is casted? to a int, should end up as
  * 0 on success and positive value on error...
  *
  *
  */
-static DWORD ov5640_mirror_enable(struct device *dev, bool enable)
+static int ov5640_mirror_enable(struct device *dev, bool enable)
 {
 	int ret;
 
@@ -1464,8 +1468,6 @@ static DWORD ov5640_mirror_enable(struct device *dev, bool enable)
 }
 
 /* ov5640_autofocus_enable
- * returns void
- *
  *
  */
 static void ov5640_autofocus_enable(struct device *dev, bool enable)
@@ -1479,7 +1481,6 @@ static void ov5640_autofocus_enable(struct device *dev, bool enable)
 /* ov5640_set_exposure
  * Set vcam exposure value
  *
- * returns void
  */
 static void ov5640_set_exposure(struct device *dev, int exp)
 {
@@ -1656,9 +1657,7 @@ static int ov5640_set_sharpening(struct device *dev, int enable)
 
 /* ov5640_testpattern_enable
  *
- * Enables testpattern output (on CAM_1 only)
- *
- * returns void
+ * Enables testpattern output
  *
  */
 static void ov5640_testpattern_enable(struct device *dev, unsigned char value)
@@ -1677,14 +1676,14 @@ static void ov5640_testpattern_enable(struct device *dev, unsigned char value)
 
 /* ov5640_flipimage
  * returns output of ov5640_doi2cwrite (integer)
- * returns DWORD on error (dword is unsigned long?)
+ * returns int on error
  *
  * Return value is from output ov5640_doi2cwrite, which returns an integer error value
- * that is 0 on success, and negative on error, this is casted? to a DWORD, should end up as
+ * that is 0 on success, and negative on error, this is casted? to a int, should end up as
  * 0 on success and positive value on error...
  *
  */
-DWORD ov5640_flipimage(struct device *dev, bool flip)
+int ov5640_flipimage(struct device *dev, bool flip)
 {
 	struct vcam_data *data = dev_get_drvdata(dev);
 	struct reg_value *regval;
@@ -1702,8 +1701,9 @@ DWORD ov5640_flipimage(struct device *dev, bool flip)
 /* ov5640_initmipicamera
  * Initialize MIPI attached camera (MIPI interface between OV5640 and FPGA)
  *
- * returns 0 on succes
- *         else failure
+ *
+ * Returns 0 on success
+ *         else error
  */
 static int ov5640_initmipicamera(struct device *dev)
 {
@@ -1722,8 +1722,9 @@ static int ov5640_initmipicamera(struct device *dev)
 /* ov5640_initcsicamera
  * Initialize CSI attached camera (CSI interface between OV5640 and FPGA)
  *
- * returns 0 on succes
- *         else failure
+ *
+ * Returns 0 on success
+ *         else error
  */
 static int ov5640_initcsicamera(struct device *dev)
 {
@@ -1748,9 +1749,8 @@ static int ov5640_initcsicamera(struct device *dev)
 /* ov5640_initcamera
  * initialize the OV5640 camera
  *
- * returns 0 on success
- *       else failed
- *
+ * Returns 0 on success
+ *         else error
  */
 static int ov5640_initcamera(struct device *dev)
 {
@@ -1786,13 +1786,11 @@ static int ov5640_initcamera(struct device *dev)
  *
  * Start initializing cameras...
  */
-int ov5640_init(struct device *dev)
+void ov5640_init(struct device *dev)
 {
 	struct vcam_data *data = dev_get_drvdata(dev);
-	int ret = 0;
 
 	INIT_WORK(&data->nightmode_work, ov5640_nightmode_on_off_work);
-	return ret;
 }
 
 /* ov5640_ioctl

@@ -58,7 +58,7 @@ static int vcam_probe(struct platform_device *pdev)
 	if (of_find_property(dev->of_node, "flip-image", NULL))
 		data->flipped_sensor = 1;
 
-	ret = PlatformInitHW(dev);
+	ret = platform_inithw(dev);
 
 	if (ret) {
 		dev_err(dev, "failed to init hardware!\n");
