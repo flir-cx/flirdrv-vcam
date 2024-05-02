@@ -15,7 +15,7 @@
 #include "i2cdev.h"
 #include <linux/platform_device.h>
 #include <linux/i2c.h>
-#include "OV5640.h"
+#include "ov5640.h"
 
 static u32 disable_nightmode = 0;
 module_param(disable_nightmode, uint, 0400);
@@ -31,12 +31,12 @@ static int ov5640_initcamera(struct device *dev);
  */
 #define VCAM_PARALLELL_INTERFACE "vcam_parallell_interface"
 
-static DWORD OV5640_mirror_enable(struct device *dev, bool enable);
-static void OV5640_autofocus_enable(struct device *dev, bool enable);
-static int OV5640_set_fov(struct device *dev, int fov);
+static DWORD ov5640_mirror_enable(struct device *dev, bool enable);
+static void ov5640_autofocus_enable(struct device *dev, bool enable);
+static int ov5640_set_fov(struct device *dev, int fov);
 
 static int ov5640_set_sharpening(struct device *dev, int enable);
-static void OV5640_Testpattern_Enable(struct device *dev, unsigned char value);
+static void ov5640_testpattern_enable(struct device *dev, unsigned char value);
 
 #define OV5640_SETTING_HIGH_K_ELEMENTS 93
 static struct reg_value ov5640_setting_High_K[OV5640_SETTING_HIGH_K_ELEMENTS] = {
@@ -1029,7 +1029,7 @@ static ssize_t enable_stream_store(struct device *dev, struct device_attribute *
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
 
-	OV5640_enable_stream(dev, val);
+	ov5640_enable_stream(dev, val);
 	return count;
 }
 
@@ -1040,7 +1040,7 @@ static ssize_t flip_store(struct device *dev, struct device_attribute *attr, con
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
 
-	OV5640_FlipImage(dev, val);
+	ov5640_flipimage(dev, val);
 	return count;
 }
 
@@ -1051,7 +1051,7 @@ static ssize_t testpattern_store(struct device *dev, struct device_attribute *at
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
 
-	OV5640_Testpattern_Enable(dev, (unsigned char)val);
+	ov5640_testpattern_enable(dev, (unsigned char)val);
 	return count;
 }
 
@@ -1070,7 +1070,7 @@ static ssize_t mirror_enable_store(struct device *dev, struct device_attribute *
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
 
-	OV5640_mirror_enable(dev, val);
+	ov5640_mirror_enable(dev, val);
 	return count;
 }
 
@@ -1081,7 +1081,7 @@ static ssize_t autofocus_enable_store(struct device *dev, struct device_attribut
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
 
-	OV5640_autofocus_enable(dev, val);
+	ov5640_autofocus_enable(dev, val);
 	return count;
 }
 
@@ -1092,7 +1092,7 @@ static ssize_t fov_store(struct device *dev, struct device_attribute *attr, cons
 
 	if (kstrtoul(buf, 0, &val) < 0)
 		return -EINVAL;
-	OV5640_set_fov(dev, val);
+	ov5640_set_fov(dev, val);
 	return count;
 }
 
@@ -1124,15 +1124,15 @@ static const struct attribute_group ov5640_groups = {
 };
 
 
-int OV5640_create_sysfs_attributes(struct device *dev)
+int ov5640_create_sysfs_attributes(struct device *dev)
 {
 	int ret = sysfs_create_group(&dev->kobj, &ov5640_groups);
 	if (ret)
-		pr_err("failed to add sys fs entry\n");
+		dev_err(dev, "failed to add sys fs entry\n");
 	return ret;
 }
 
-void OV5640_remove_sysfs_attributes(struct device *dev)
+void ov5640_remove_sysfs_attributes(struct device *dev)
 {
 	sysfs_remove_group(&dev->kobj, &ov5640_groups);
 }
@@ -1291,13 +1291,13 @@ static int ov5640_get_otp_memory(struct device *dev, u8 *otp_memory, int n)
 	 */
 	ret = ov5640_mod_reg(dev, OV5640_SYSTEM_RESET00, BIT(4), BIT(4));
 	if (ret < 0) {
-		pr_err("ov5640: failed to disable OTP module\n");
+		dev_err(dev, "ov5640: failed to disable OTP module\n");
 		return ret;
 	}
 
 	ret = ov5640_mod_reg(dev, OV5640_CLOCK_ENABLE00, BIT(4), 0);
 	if (ret < 0) {
-		pr_err("ov5640: failed to disable OTP clock\n");
+		dev_err(dev, "ov5640: failed to disable OTP clock\n");
 		return ret;
 	}
 
@@ -1357,9 +1357,9 @@ static int ov5640_set_sensor_model_conf(struct device *dev)
 
 	if (data->sensor_model == OV5640_HIGH_K) {
 		dev_info(dev, "Selecting High_K config\n");
-		ret = OV5640_DoI2CWrite(dev, ov5640_setting_High_K, OV5640_SETTING_HIGH_K_ELEMENTS);
+		ret = ov5640_doi2cwrite(dev, ov5640_setting_High_K, OV5640_SETTING_HIGH_K_ELEMENTS);
 		if (ret) {
-			dev_err(dev, "OV5640_DoI2CWrite() failed for camera\n");
+			dev_err(dev, "ov5640_doi2cwrite() failed for camera\n");
 		}
 	} else if (data->sensor_model == OV5640_STANDARD) {
 		dev_info(dev, "Selecting Standard OV5640 config\n");
@@ -1376,7 +1376,7 @@ static int ov5640_set_sensor_model_conf(struct device *dev)
  *        negative error when i2c_transfer to failes
  *
  */
-int OV5640_DoI2CWrite(struct device *dev, struct reg_value *pMode, USHORT elements)
+int ov5640_doi2cwrite(struct device *dev, struct reg_value *pMode, USHORT elements)
 {
 	struct vcam_data *data = dev_get_drvdata(dev);
 	struct i2c_msg msgs[1];
@@ -1421,81 +1421,81 @@ int OV5640_DoI2CWrite(struct device *dev, struct reg_value *pMode, USHORT elemen
  *
  *
  */
-void OV5640_enable_stream(struct device *dev, bool enable)
+void ov5640_enable_stream(struct device *dev, bool enable)
 {
 	if (enable)
-		OV5640_DoI2CWrite(dev, &stream_on, 1);
+		ov5640_doi2cwrite(dev, &stream_on, 1);
 	else
-		OV5640_DoI2CWrite(dev, &stream_off, 1);
+		ov5640_doi2cwrite(dev, &stream_off, 1);
 }
 
-/* OV5640_nightmode_enable
+/* ov5640_nightmode_enable
  * returns void
  *
  *
  */
-static void OV5640_nightmode_enable(struct device *dev, bool enable)
+static void ov5640_nightmode_enable(struct device *dev, bool enable)
 {
 
 	if (enable)
-		OV5640_DoI2CWrite(dev, &night_mode_on, 1);
+		ov5640_doi2cwrite(dev, &night_mode_on, 1);
 	else
-		OV5640_DoI2CWrite(dev, &night_mode_off, 1);
+		ov5640_doi2cwrite(dev, &night_mode_off, 1);
 }
 
-/* OV5640_nightmode_enable
+/* ov5640_nightmode_enable
  * returns DWORD on error (dword is unsigned long?)
  *
- * Return value is from output OV5640_DoI2CWrite, which returns an integer error value
+ * Return value is from output ov5640_doi2cwrite, which returns an integer error value
  * that is 0 on success, and negative on error, this is casted? to a DWORD, should end up as
  * 0 on success and positive value on error...
  *
  *
  */
-static DWORD OV5640_mirror_enable(struct device *dev, bool enable)
+static DWORD ov5640_mirror_enable(struct device *dev, bool enable)
 {
 	int ret;
 
 	if (enable)
-		ret = OV5640_DoI2CWrite(dev, &ov5640_mirror_on_reg, 1);
+		ret = ov5640_doi2cwrite(dev, &ov5640_mirror_on_reg, 1);
 	else
-		ret = OV5640_DoI2CWrite(dev, &ov5640_mirror_off_reg, 1);
+		ret = ov5640_doi2cwrite(dev, &ov5640_mirror_off_reg, 1);
 	return ret;
 }
 
-/* OV5640_autofocus_enable
+/* ov5640_autofocus_enable
  * returns void
  *
  *
  */
-static void OV5640_autofocus_enable(struct device *dev, bool enable)
+static void ov5640_autofocus_enable(struct device *dev, bool enable)
 {
 	if (enable)
-		OV5640_DoI2CWrite(dev, &autofocus_on, 1);
+		ov5640_doi2cwrite(dev, &autofocus_on, 1);
 	else
-		OV5640_DoI2CWrite(dev, &autofocus_off, 1);
+		ov5640_doi2cwrite(dev, &autofocus_off, 1);
 }
 
-/* OV5640_set_exposure
+/* ov5640_set_exposure
  * Set vcam exposure value
  *
  * returns void
  */
-static void OV5640_set_exposure(struct device *dev, int exp)
+static void ov5640_set_exposure(struct device *dev, int exp)
 {
 	struct reg_value temp;
 
 	temp.u16RegAddr = 0x3500;
 	temp.u8Val = ((exp >> 16) & 0x0f);
-	OV5640_DoI2CWrite(dev, &temp, 1);
+	ov5640_doi2cwrite(dev, &temp, 1);
 
 	temp.u16RegAddr = 0x3501;
 	temp.u8Val = ((exp >> 8) & 0xff);
-	OV5640_DoI2CWrite(dev, &temp, 1);
+	ov5640_doi2cwrite(dev, &temp, 1);
 
 	temp.u16RegAddr = 0x3502;
 	temp.u8Val = (exp & 0xf0);
-	OV5640_DoI2CWrite(dev, &temp, 1);
+	ov5640_doi2cwrite(dev, &temp, 1);
 }
 
 /* ov5640_nightmode_on_off_work
@@ -1509,39 +1509,39 @@ static void ov5640_nightmode_on_off_work(struct work_struct *work)
 
 	if(! disable_nightmode) {
 	msleep(1000);
-	OV5640_nightmode_enable(dev, FALSE);
+	ov5640_nightmode_enable(dev, FALSE);
 	msleep(1000);
-	OV5640_nightmode_enable(dev, TRUE);
+	ov5640_nightmode_enable(dev, TRUE);
 	}
 }
 
 
-/* OV5640_set_5MP
+/* ov5640_set_5mp
  *
  * returns 0 on success
  *         <0, (or >0) on  error...
  *
  * sets modes ov5640_init_settings_9fps_5MP
  *            ov5640_edge_enhancement
- *            OV5640_FlipImage      - default flip of sensor??
- *            OV5640_mirror_enable  - default mirror of sensor??
+ *            ov5640_flipimage      - default flip of sensor??
+ *            ov5640_mirror_enable  - default mirror of sensor??
  *                image flip and mirror enable, might also be set in ov5640_init_settings_9fps_5MP and similar structs...
  *
  */
-static int OV5640_set_5MP(struct device *dev)
+static int ov5640_set_5mp(struct device *dev)
 {
 	struct vcam_data *data = dev_get_drvdata(dev);
 	int ret;
 
 	bool ov5640_using_mipi_interface = !of_find_property(dev->of_node, VCAM_PARALLELL_INTERFACE, NULL);
 
-	OV5640_enable_stream(dev, FALSE);
+	ov5640_enable_stream(dev, FALSE);
 
 	/* Initialize camera settings */
 	if (ov5640_using_mipi_interface)
-		ret = OV5640_DoI2CWrite(dev, ov5640_init_setting_9fps_5MP, OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS);
+		ret = ov5640_doi2cwrite(dev, ov5640_init_setting_9fps_5MP, OV5640_INIT_SETTING_9FPS_5MP_ELEMENTS);
 	else
-		ret = OV5640_DoI2CWrite(dev, ov5640_init_setting_5MP, OV5640_INIT_SETTING_5MP_ELEMENTS);
+		ret = ov5640_doi2cwrite(dev, ov5640_init_setting_5MP, OV5640_INIT_SETTING_5MP_ELEMENTS);
 
 	if (ret) {
 		dev_err(dev, "Failed to set %s 5MP mode\n", ov5640_using_mipi_interface ? "MIPI" : "parallell");
@@ -1552,7 +1552,7 @@ static int OV5640_set_5MP(struct device *dev)
 	ov5640_set_sensor_model_conf(dev);
 
 	if (data->edge_enhancement) {
-		ret = OV5640_DoI2CWrite(dev, &ov5640_edge_enhancement, 1);
+		ret = ov5640_doi2cwrite(dev, &ov5640_edge_enhancement, 1);
 		if (ret) {
 			dev_err(dev, "Failed to enable edge enhancement\n");
 			return ret;
@@ -1561,25 +1561,25 @@ static int OV5640_set_5MP(struct device *dev)
 
 	if (ov5640_using_mipi_interface) {
 		/* Set default flip */
-		ret = OV5640_FlipImage(dev, FALSE);
+		ret = ov5640_flipimage(dev, FALSE);
 		if (ret) {
-			dev_err(dev, "Failed to call OV5640_FlipImage\n");
+			dev_err(dev, "Failed to call ov5640_flipimage\n");
 			return ret;
 		}
 
-		ret = OV5640_mirror_enable(dev, data->flipped_sensor);
+		ret = ov5640_mirror_enable(dev, data->flipped_sensor);
 		if (ret) {
-			dev_err(dev, "Failed to call OV5640_mirror_enable\n");
+			dev_err(dev, "Failed to call ov5640_mirror_enable\n");
 			return ret;
 		}
 	}
 
-	OV5640_enable_stream(dev, TRUE);
+	ov5640_enable_stream(dev, TRUE);
 	return 0;
 }
 
 
-/* OV5640_set_fov
+/* ov5640_set_fov
  *
  *
  * returns 0 on success
@@ -1587,7 +1587,7 @@ static int OV5640_set_5MP(struct device *dev)
  *         ERROR_NOT_SUPPORTED, setting not allowed..
  *
  */
-static int OV5640_set_fov(struct device *dev, int fov)
+static int ov5640_set_fov(struct device *dev, int fov)
 {
 	struct vcam_data *data = dev_get_drvdata(dev);
 	int ret = ERROR_NOT_SUPPORTED;
@@ -1621,10 +1621,10 @@ static int OV5640_set_fov(struct device *dev, int fov)
 	if (ret == 0) {
 		dev_info(dev, "Change fov to %i\n", fov);
 		ov5640_set_sensor_model_conf(dev);
-		OV5640_enable_stream(dev, FALSE);
-		ret = OV5640_DoI2CWrite(dev, setting, elements);
+		ov5640_enable_stream(dev, FALSE);
+		ret = ov5640_doi2cwrite(dev, setting, elements);
 
-		OV5640_enable_stream(dev, TRUE);
+		ov5640_enable_stream(dev, TRUE);
 
 		if (ret == 0) {
 			g_vcamFOV = fov;
@@ -1648,43 +1648,43 @@ static int ov5640_set_sharpening(struct device *dev, int enable)
 	int ret;
 
 	if (enable)
-		ret = OV5640_DoI2CWrite(dev, &ov5640_sharpening_on_reg, 1);
+		ret = ov5640_doi2cwrite(dev, &ov5640_sharpening_on_reg, 1);
 	else
-		ret = OV5640_DoI2CWrite(dev, &ov5640_sharpening_off_reg, 1);
+		ret = ov5640_doi2cwrite(dev, &ov5640_sharpening_off_reg, 1);
 	return ret;
 }
 
-/* OV5640_Testpattern_Enable
+/* ov5640_testpattern_enable
  *
  * Enables testpattern output (on CAM_1 only)
  *
  * returns void
  *
  */
-static void OV5640_Testpattern_Enable(struct device *dev, unsigned char value)
+static void ov5640_testpattern_enable(struct device *dev, unsigned char value)
 {
 	if (value  & 0x80) {
 		struct reg_value testimg = { 0x503d, 0x0 };
 		testimg.u8Val = (u8)(value);
 		dev_info(dev, "Enable testpattern 0x%02x\n", testimg.u8Val);
-		OV5640_DoI2CWrite(dev, &testimg, 1);
+		ov5640_doi2cwrite(dev, &testimg, 1);
 	} else {
 		struct reg_value ov5640_testimage_off_reg = { 0x503d, 0x00 };
 		dev_info(dev, "Disable testpattern\n");
-		OV5640_DoI2CWrite(dev, &ov5640_testimage_off_reg, 1);
+		ov5640_doi2cwrite(dev, &ov5640_testimage_off_reg, 1);
 	}
 }
 
-/* OV5640_FlipImage
- * returns output of OV5640_DoI2CWrite (integer)
+/* ov5640_flipimage
+ * returns output of ov5640_doi2cwrite (integer)
  * returns DWORD on error (dword is unsigned long?)
  *
- * Return value is from output OV5640_DoI2CWrite, which returns an integer error value
+ * Return value is from output ov5640_doi2cwrite, which returns an integer error value
  * that is 0 on success, and negative on error, this is casted? to a DWORD, should end up as
  * 0 on success and positive value on error...
  *
  */
-DWORD OV5640_FlipImage(struct device *dev, bool flip)
+DWORD ov5640_flipimage(struct device *dev, bool flip)
 {
 	struct vcam_data *data = dev_get_drvdata(dev);
 	struct reg_value *regval;
@@ -1695,7 +1695,7 @@ DWORD OV5640_FlipImage(struct device *dev, bool flip)
 	else
 		regval = &ov5640_flip_off_reg;
 
-	return OV5640_DoI2CWrite(dev, regval, 1);
+	return ov5640_doi2cwrite(dev, regval, 1);
 }
 
 
@@ -1710,7 +1710,7 @@ static int ov5640_initmipicamera(struct device *dev)
 	int ret = 0;
 
 	dev_info(dev, "MIPI interface used\n");
-	ret = OV5640_set_5MP(dev);
+	ret = ov5640_set_5mp(dev);
 	if (ret) {
 		dev_err(dev, "Failed to configure MIPI camera interface\n");
 		return ret;
@@ -1730,13 +1730,13 @@ static int ov5640_initcsicamera(struct device *dev)
 	int ret = 0;
 
 	dev_info(dev, "cam, Parallell interface\n");
-	ret = OV5640_DoI2CWrite(dev, ov5640_init_interface_csi, OV5640_INIT_INTERFACE_CSI_ELEMENTS);
+	ret = ov5640_doi2cwrite(dev, ov5640_init_interface_csi, OV5640_INIT_INTERFACE_CSI_ELEMENTS);
 	if (ret) {
 		dev_err(dev, "Failed to configure parallell csi camera interface\n");
 		return ret;
 	}
 
-	ret = OV5640_mirror_enable(dev, true);
+	ret = ov5640_mirror_enable(dev, true);
 	if (ret < 0) {
 		dev_err(dev, "Failed to enable mirror on sensor\n");
 		return ret;
@@ -1776,17 +1776,17 @@ static int ov5640_initcamera(struct device *dev)
 		}
 	}
 
-	ret = OV5640_set_fov(dev, g_vcamFOV);
+	ret = ov5640_set_fov(dev, g_vcamFOV);
 	if (ret)
 		return ret;
 
 	return ret;
 }
-/* OV5640_Init
+/* ov5640_init
  *
  * Start initializing cameras...
  */
-int OV5640_Init(struct device *dev)
+int ov5640_init(struct device *dev)
 {
 	struct vcam_data *data = dev_get_drvdata(dev);
 	int ret = 0;
@@ -1846,7 +1846,7 @@ int ov5640_ioctl(struct device *dev, int cmd, PUCHAR pBuf, PUCHAR pUserBuf)
 			ret = data->ops.set_torchstate(dev, pFlashData);
 			/* set fast exposure to compensate for led brightness */
 			if (pFlashData->bTorchOn)
-				OV5640_set_exposure(dev, 0x2000);
+				ov5640_set_exposure(dev, 0x2000);
 
 			up(&data->sem);
 		}
@@ -1860,7 +1860,7 @@ int ov5640_ioctl(struct device *dev, int cmd, PUCHAR pBuf, PUCHAR pUserBuf)
 			switch (pMode->eCamMode) {
 			case VCAM_STILL:
 				/* set camera to 5MP full size mode */
-				ret = OV5640_set_5MP(dev);
+				ret = ov5640_set_5mp(dev);
 				msleep(800);
 				break;
 
@@ -1885,7 +1885,7 @@ int ov5640_ioctl(struct device *dev, int cmd, PUCHAR pBuf, PUCHAR pUserBuf)
 			VCAMIOCTLFOV *pVcamFOV = (VCAMIOCTLFOV *) pBuf;
 
 			down(&data->sem);
-			ret = OV5640_set_fov(dev, pVcamFOV->fov);
+			ret = ov5640_set_fov(dev, pVcamFOV->fov);
 			up(&data->sem);
 		}
 		break;
@@ -1897,12 +1897,12 @@ int ov5640_ioctl(struct device *dev, int cmd, PUCHAR pBuf, PUCHAR pUserBuf)
 		break;
 	case IOCTL_CAM_MIRROR_ON:
 	case IOCTL_CAM_MIRROR_OFF:
-		ret = OV5640_mirror_enable(dev, (cmd == IOCTL_CAM_MIRROR_ON));
+		ret = ov5640_mirror_enable(dev, (cmd == IOCTL_CAM_MIRROR_ON));
 		break;
 	case IOCTL_CAM_FLIP_ON:
 	case IOCTL_CAM_FLIP_OFF:
 		down(&data->sem);
-		ret = OV5640_FlipImage(dev, (cmd == IOCTL_CAM_FLIP_ON));
+		ret = ov5640_flipimage(dev, (cmd == IOCTL_CAM_FLIP_ON));
 		up(&data->sem);
 		break;
 	default:

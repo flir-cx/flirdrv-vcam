@@ -11,7 +11,7 @@
 #include <linux/of.h>
 #include <linux/regulator/consumer.h>
 #include <linux/regulator/of_regulator.h>
-#include "OV5640.h"
+#include "ov5640.h"
 // Function prototypes
 static void set_power(struct device *dev, bool enable);
 static DWORD get_torchstate(struct device *dev, VCAMIOCTLFLASH *pFlashData);
@@ -31,7 +31,7 @@ static ssize_t vcam_eoco_power_store(struct device *dev, struct device_attribute
 		return -EINVAL;
 	data->ops.set_power(dev, val);
 	if (val) {
-		OV5640_Init(dev);
+		ov5640_init(dev);
 	}
 	return count;
 }
@@ -64,7 +64,7 @@ int vcam_eoco_create_sysfs_attributes(struct device *dev)
 
 	ret = sysfs_create_group(&dev->kobj, &vcam_eoco_groups);
 	if (ret)
-		pr_err("failed to add sys fs entry\n");
+		dev_err(dev, "failed to add sys fs entry\n");
 	return ret;
 }
 
@@ -226,7 +226,7 @@ DWORD PlatformInitHW(struct device *dev)
 	}
 
 	data->ops.set_power(dev, true);
-	ret = OV5640_Init(dev);
+	ret = ov5640_init(dev);
 	if (ret) {
 		dev_err(dev, "error during initialization of OV5640\n");
 	}
@@ -235,7 +235,7 @@ DWORD PlatformInitHW(struct device *dev)
 	if (ret)
 		goto out_eoco_sysfs;
 	
-	ret = OV5640_create_sysfs_attributes(dev);
+	ret = ov5640_create_sysfs_attributes(dev);
 	if (ret)
 		goto out_sysfs;
 
@@ -333,7 +333,7 @@ static void set_suspend(struct device *dev, bool enable)
 		set_power(dev, false);
 	} else {
 		set_power(dev, true);
-		OV5640_Init(dev);
+		ov5640_init(dev);
 	}
 }
 
@@ -398,10 +398,9 @@ static DWORD deinitialize_hw(struct device *dev)
 {
 	struct vcam_data *data = dev_get_drvdata(dev);
 
-	OV5640_remove_sysfs_attributes(dev);
+	ov5640_remove_sysfs_attributes(dev);
 	vcam_eoco_remove_sysfs_attributes(dev);
 		
-	/* OV5640_DeInit(pInfo); */
 	data->ops.set_power(dev, false);
 	
 	i2c_put_adapter(data->i2c_bus);

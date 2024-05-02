@@ -22,12 +22,12 @@ struct reg_value {
 	u16 u16RegAddr;
 	u8 u8Val;
 };
-int OV5640_DoI2CWrite(struct device *dev, struct reg_value *pMode, USHORT elements);
-DWORD OV5640_FlipImage(struct device *dev, bool flip);
-void OV5640_enable_stream(struct device *dev, bool enable);
-int OV5640_create_sysfs_attributes(struct device *dev);
-void OV5640_remove_sysfs_attributes(struct device *dev);
-int OV5640_Init(struct device *dev);
+int ov5640_doi2cwrite(struct device *dev, struct reg_value *pMode, USHORT elements);
+DWORD ov5640_flipimage(struct device *dev, bool flip);
+void ov5640_enable_stream(struct device *dev, bool enable);
+int ov5640_create_sysfs_attributes(struct device *dev);
+void ov5640_remove_sysfs_attributes(struct device *dev);
+int ov5640_init(struct device *dev);
 int ov5640_ioctl(struct device *dev, int cmd, PUCHAR pBuf, PUCHAR pUserBuf);
 
 #endif
