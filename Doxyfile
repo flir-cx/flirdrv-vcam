@@ -1,0 +1,9 @@
+# Include the common Doxygen configuration first. Override parameters below.
+PROJECT_NAME           = vcam
+GENERATE_TAGFILE       = ./docs/vcam.tag
+INPUT = .
+RECURSIVE = YES
+GENERATE_TREEVIEW = YES
+
+OPTIMIZE_OUTPUT_FOR_C  = YES
+

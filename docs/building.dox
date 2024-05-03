@@ -1,0 +1,30 @@
+/** \page Building
+ 
+<h2>Using Manifold</h2>
+<p>
+  A simple way to build this project is by building the full Yocto target using manifold.
+
+ clone the manifold repository, cd into the root of the project and run:
+</p>
+ 
+<pre>
+  <code>
+
+  </code>
+</pre>
+
+
+<h2>Using Out of tree method</h2>
+<p>
+  Another way is to checkout the code using devtool in yocto tree
+  And build It out of tree
+
+Requires updating the Makefile...
+</p>
+ 
+<pre>
+  <code>
+
+  </code>
+  </pre>
+*/
